@@ -1,0 +1,7 @@
+---
+
+- name: Install compiler dependencies
+  apt:
+    name: [ "gcc", "g++", "pkg-config", "make", "cmake", "ninja-build", "protobuf-compiler", "protobuf-c-compiler"]
+    state: present
+    update_cache: yes

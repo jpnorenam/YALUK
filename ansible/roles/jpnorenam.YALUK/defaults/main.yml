@@ -1,0 +1,8 @@
+---
+
+Install_only_prerequisites: true
+Install_with_iec61850: true
+
+VILLASnode_repository_masterurl: "https://git.rwth-aachen.de/acs/public/villas/node"
+libwebsockets_repository_masterurl: "https://libwebsockets.org/repo/libwebsockets"
+libiec61850_repository_masterurl: "https://github.com/mz-automation/libiec61850"

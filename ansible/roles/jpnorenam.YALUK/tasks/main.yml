@@ -1,0 +1,7 @@
+---
+
+- include_tasks: ubuntu.yml
+  when: ansible_distribution == "Debian"
+
+- set_fact:
+    VILLASnode_role_completed: true

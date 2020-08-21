@@ -1,0 +1,5 @@
+# Visual studio
+.vs/
+
+# Vagrant
+.vagrant/
