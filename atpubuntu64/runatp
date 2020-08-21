@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# change the directories as you need.
+#
+# Author:
+# Dr. Piergiovanni La Seta <piergiovanni.laseta@gmx.de>
+#
+#
+filename=$1
+sname=${filename##*\\}
+shortname=${sname%.*}
+cp ~/.wine/drive_c/ATPDraw/ATP/$shortname.atp ~/.wine/drive_c/ATPDraw/ATP/$shortname.dat
+runtp /home/piero/.wine/drive_c/ATPDraw/ATP/$shortname
+

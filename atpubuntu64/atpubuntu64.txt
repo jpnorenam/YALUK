@@ -1,0 +1,87 @@
+This is ATP-EMTP for GNU/Linux.
+
+[[ About ATP/Linux ]]
+It was compiled with GNU-Fortran(Gfortran) under Ubuntu 16.04 Linux
+using the source code created and copyrighted by
+Can/Am EMTP User Group.
+
+The source code of ATP for GNU/Linux was created and tested
+by Orlando Hevia from Windows Mingw32 code.
+
+
+[[ Plotting output ]]
+  - C-like, PISA, wide-nn, formatted, and unformatted pl4 file fo
+rmats
+    are supported.
+
+  - The interactive plotting software like TPPLOT/PCPLOT for GNU/Linux
+    has been developed by Mr. Orlando P. Hevia in Argentina.  It is
+    gtpplot/Linux, and can be obtained from the ATP secure ftp servers.
+
+  - Batch mode plotting is possible by specifying plotting output
+    in data cards.  .PS file can be displayed and printed by
+    Ghostscript, and .GNU file can be displayed and printed by
+    Gnuplot.  Please refer to DCN20.DAT as for specifying plotting
+    format.  Please note that nopost and nognu should be set "0"
+    in startup file.
+
+
+
+
+
+[[INSTALL]]
+
+(1) Copy atpubuntu64.zip to a temporary directory, and
+   unarchive it.
+
+   #  unzip atpubuntu64.zip
+
+   Move the following files to the install
+   directory of ATP.
+     tpbig
+     runtp
+     atv
+     atg
+     armafit
+     listsize.big
+     startup
+     graphics
+     graphics.aux and more .aux files
+
+   If tpbig, armafit and runtp cannot run, set the attribute like
+as follows;
+     chmod 0755 tpbig armafit runtp atv atg
+
+(2) Settings
+
+   Write the following in .bashrc file.
+
+    GNUDIR=/home/atp/    <----- where you put startup, graphics
+                                and graphics.aux
+    export GNUDIR
+
+   Add the directory where you put tpbig, armafit and runtp to
+PATH.
+
+   listsize.big is the maximum size of the dimension. You can
+specify your own listsize.dat within the limits of listsize.big .
+If there is no listsize.dat, the contents of listsize.big are
+used.
+
+
+<<Feedback>>
+If you find any problems, please report bugs or findings.
+
+<<Legal status>>
+This software can be freely used and distributed under the terms of
+ATP-License. This comes with no warranty.
+
+
+  Enjoy!
+------------------------------------------------------
+2018-03-31
+
+Orlando Hevia
+Santa Fe - Argentina
+E-MAIL: heviaop@gmail  oph@emtp.org
+

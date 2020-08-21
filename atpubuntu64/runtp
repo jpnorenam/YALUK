@@ -1,0 +1,14 @@
+# script to run atp
+# usage:
+# runtp file <enter>
+#
+rm -f $1.dbg
+rm -f $1.lis
+rm -f $1.pl4
+rm -f dum*.bin
+rm -f *.tmp
+./tpbig  DISK $1. $1. -R
+ls -lh $1.*
+
+
+

@@ -1,0 +1,11 @@
+      IF ( IPRSPY .GT. -3 )                                                     
+     1 WRITE (46, *) ' Top of GNU IEIGHT.  M =',  M                             
+      IF ( M .EQ. 0 ) THEN                                                      
+      INTEG8 = MONCAR(1+NT)                                                     
+          ELSE                                                                  
+      INTEG4(1) = MONCAR(1+NT)                                                  
+      INTEG4(2) = MONCAR(2+NT)                                                  
+      IF ( IPRSPY .GT. -3 )                                                     
+     1 WRITE (46, *) ' IEIGHT builds INTEGER*8.  INTEG4(1:2), INTEG8 =',        
+     2                                           INTEG4,      INTEG8            
+          ENDIF                                                                 
