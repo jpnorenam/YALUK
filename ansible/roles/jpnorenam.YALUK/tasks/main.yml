@@ -1,6 +1,6 @@
 ---
 
-- include_tasks: ubuntu.yml
+- include_tasks: debian.yml
   when: ansible_distribution == "Debian"
 
 - set_fact:
