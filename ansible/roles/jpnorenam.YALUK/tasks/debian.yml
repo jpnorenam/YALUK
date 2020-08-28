@@ -2,11 +2,27 @@
 
 - name: Install compiler dependencies
   apt:
-    name: [ "gcc", "g++", "pkg-config", "make", "cmake", "ninja-build", "libmotif4", "libncurses-dev", "libgfortran"]
+    name: [ "gcc", "g++", "pkg-config", "make", "cmake", "ninja-build", "libxm4", "libncurses-dev", "libgfortran4", "dos2unix"]
     state: present
     update_cache: yes
+
+- name: Dos 2 Unix Vardimn
+  shell: dos2unix /vagrant/libubuntu64/vardimn
+
+- name: Give permissions to vardimn
+  file:
+    path: /vagrant/libubuntu64/vardim
+    owner: vagrant
+    group: vagrant
+    mode: '0755'
 
 - name: vardimn listsize.big
   command:
     chdir: /vagrant/libubuntu64
     cmd: ./vardimn listsize.big
+
+- name: Build ATP
+  make:
+    chdir: /vagrant/libubuntu64
+    params:
+      NUM_THREADS: 4
