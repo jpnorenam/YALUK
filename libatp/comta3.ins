@@ -1,0 +1,19 @@
+      XTCS(    672) = T                                                         
+      TEST1   = 10.0 * ( 1.0 + TIMEX ) ** 2 + 50.                               
+      TEST2   = 1.E2 * DCOS( 2.0 * 3.14159 * TEST1 / 100. )                     
+      TEST3   = 10.0  +  5.5 * TIMEX * DSQRT( DABS( TEST2 ) )                   
+      TEST5   =  2.0 * PI * TEST1 / 100.                                        
+      TEST6   =  2.0 * DSIN( TEST5 )                                            
+      TWOX    = 2.E-4 * ( TEST2 * TEST2  + 2500. * TEST6 * TEST6 )              
+                                                                                
+      IND1 = 4                                                                  
+      DO 6631  I=IND1,   4, 4                                                   
+ 6631 RSBLK(I+     30) = 0.0                                                    
+                                                                                
+      RSBLK(     34) = RSBLK(     34) * ATCS(    911)                           
+      XTCS(    671) = RSBLK(     34)                                            
+      IF ( XTCS(    671) .LT. RSBLK(     32) )                                  
+     1 XTCS(    671) = RSBLK(     32)                                           
+      IF ( XTCS(    671) .GT. RSBLK(     33) )                                  
+     1 XTCS(    671) = RSBLK(     33)                                           
+      CALL MOVER ( XTCS(    692), XTCS(    752),      6 )                       

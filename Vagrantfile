@@ -60,10 +60,11 @@ Vagrant.configure("2") do |config|
   # information on available options.
 
   # provision SSH access for Visual Studio cross platform
-  config.vm.provision "file", source: "yaluk.pub", destination: "/home/vagrant/.ssh/key"
+  config.vm.provision "file", source: "vagrant_ssh_pub_key", destination: "/home/vagrant/.ssh/vagrant_ssh_pub_key"
   config.vm.provision "shell", inline: <<-SHELL
-  	cat /home/vagrant/.ssh/key >> /home/vagrant/.ssh/authorized_keys
-  	rm /home/vagrant/.ssh/key
+  	cat /home/vagrant/.ssh/vagrant_ssh_pub_key >> /home/vagrant/.ssh/authorized_keys
+  	rm /home/vagrant/.ssh/vagrant_ssh_pub_key
+    apt-get update -y
   SHELL
 
   # provision VILLASnode installation
