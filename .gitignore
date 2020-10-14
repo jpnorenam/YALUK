@@ -4,4 +4,10 @@
 # Vagrant
 .vagrant/
 
+# Compilation
+out/
+build/
+*.o
 tmp/
+MingW/
+libubuntu64_old/

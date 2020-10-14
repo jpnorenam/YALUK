@@ -8,28 +8,29 @@ SYSTEM = LINUX
 INCFLAGS = -Inodaline
 CC = gcc
 FOR = gfortran
+AR = ar
 #
 # OBJECTS is a customized list of modules that are being worked on
 # and are present in the current directory
 
 OBJECTS  = yaluk_exec.o \
-		       yaluk_init.o \
-					 em_field_funct.o \
-					 basic_functions.o
+		   yaluk_init.o \
+		   em_field_funct.o \
+		   basic_functions.o
 
 # ------------------------
 
 CFLAGS = -O2
-FFLAGS = -Ofast -ffree-form -ffree-line-length-512 -std=f95 -w
+FFLAGS = -O2 -ffree-form -ffree-line-length-512 -std=gnu -w
 
-LIBRARY=yaluk.a
+LIBRARY=libyaluk.a
 
 .f.o:
 	$(FOR) -c $(FFLAGS) $<
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCFLAGS) $<
 $(LIBRARY) : $(OBJECTS)
-	$(FOR) -static -fpic -o $(LIBRARY) $(OBJECTS)
+	$(AR) rc $(LIBRARY) $(OBJECTS)
 #
 # make available the following objects:
 #

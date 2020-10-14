@@ -103,7 +103,7 @@ CHARACTER (LEN=5) ncase_s
 CHARACTER (LEN=3) indarchiv
 CHARACTER (LEN=30) archivo, casename,evalue,prueba_archiv
 CHARACTER(LEN=512) dir
-INTEGER(4) length,ncase,nline
+INTEGER(4) length,ncase,nline,status_int
 LOGICAL(4) status, status_bas,status_ef,status_hm,triangular,Imprimir_campo,campo_distante
 LOGICAL comparar
 INTEGER, SAVE :: ALLOC_ERR_I
@@ -208,9 +208,9 @@ CLOSE (UNIT=11)
 	!  WRITE (*,*) 'Failed to get current directory'
 	!END IF
 
-	CALL GETCWD(dir, status)
-	IF (status) THEN
-	  WRITE (*,*) 'Failed to get current directory'
+	CALL GETCWD(dir, status_int)
+	IF (status_int .NE. 0) THEN
+	  WRITE (*,*) 'Failed to get current directory. Error:  ',status_int
 	END IF
 
 1012 SELECT CASE(ERRNUM>0)
@@ -267,16 +267,16 @@ CLOSE (UNIT=11)
 
 	CLOSE (UNIT=12)
 	!status = CHANGEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-	CALL CHDIR(dir//'\'//casename(1:LEN_TRIM(casename)), status)
-		IF (.NOT. status) THEN
+	CALL CHDIR(dir//'\'//casename(1:LEN_TRIM(casename)), status_int)
+		IF (status_int .EQ. 0) THEN
 				!dir = FILE$CURDRIVE
 				!length = GETDRIVEDIRQQ(dir)
-				CALL GETCWD(dir, status)
+				CALL GETCWD(dir, status_int)
 			write(*,*) 'Current Directory for cases:  ',TRIM(dir)
 		ELSE
 			!status = MAKEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-			CALL SYSTEM( 'mkdir ' // dir//'\'//casename(1:LEN_TRIM(casename)), status)
-			IF (.NOT. status) THEN
+			CALL SYSTEM( 'mkdir ' // dir//'\'//casename(1:LEN_TRIM(casename)), status_int)
+			IF (status_int .EQ. 0) THEN
 				!write(*,*) ' Directory for cases was created ',dir(1:length)//'\'//casename(1:LEN_TRIM(casename))
 				write(*,*) ' Directory for cases was created ',dir//'\'//casename(1:LEN_TRIM(casename))
 				write(*,*) '**************************************************************'

@@ -18,7 +18,7 @@
       DATA refnam(1) / 'SAMPLE_MODEL' /  ! Do not modify this line
       DATA refnam(2) / 'SAMPLE_C_MODEL' /
       DATA refnam(3) / ' ' /
-      DATA refnam(4) / ' ' /
+      DATA refnam(4) / 'YALUK_DLL_MODEL' /
       DATA refnam(5) / ' ' /
       DATA refnam(6) / ' ' /
       DATA refnam(7) / ' ' /
@@ -71,9 +71,11 @@
        ENDIF
       CONTINUE !      -------------------------------------------
       ELSE IF ( iname.EQ.4 ) THEN
-       IF (iniflg.EQ.1) THEN
-       ELSE
-       ENDIF
+      IF (iniflg.EQ.1) THEN
+        CALL yaluk_init(xdata, xin, xout, xvar)
+      ELSE
+        CALL yaluk_exec(xdata, xin, xout, xvar)
+      ENDIF
       CONTINUE !      -------------------------------------------
       ELSE IF ( iname.EQ.5 ) THEN
        IF (iniflg.EQ.1) THEN
@@ -96,9 +98,9 @@
        ENDIF
       ENDIF
       CONTINUE !      -------------------------------------------
-      RETURN     ! Pass control back to MODELS (the CALL is from FTNSUB)
+      RETURN
       END
-      SUBROUTINE FGNFUN ( name, namlen, xarg, nval, ierflg)
+      SUBROUTINE fgnfun ( name, namlen, xarg, nval, ierflg)
       IMPLICIT REAL*8 (A-H, O-Z),  INTEGER*4 (I-N)
       DIMENSION xarg(*)
       CHARACTER*1 name(*)
@@ -170,7 +172,7 @@
       CONTINUE !      -------------------------------------------
       RETURN
       END
-      SUBROUTINE SAMPLM (xdata, xin, xout, xvar)
+      SUBROUTINE samplm(xdata, xin, xout, xvar)
       IMPLICIT REAL*8 (A-H, O-Z),  INTEGER*4 (I-N)
       DIMENSION xdata(*), xin(*), xout(*), xvar(*)
       CHARACTER*80 text80  ! Buffer used to assemble messages for output
@@ -241,7 +243,7 @@
       CALL OUTSIX( text80, 80 )
       RETURN
       END
-      FUNCTION SAMPLF (arg)
+      FUNCTION samplf(arg)
       IMPLICIT REAL*8 (A-H, O-Z),  INTEGER*4 (I-N)
       DIMENSION arg(2)
       CONTINUE !-------------------------------------------------------!

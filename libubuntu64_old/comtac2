@@ -1,7 +1,0 @@
-# Run the newly compiled Tpbig
-COMPTACS=USE
-export COMPTACS
-tpbig  DISK $1. $1. -r
-COMPTACS=
-export COMPTACS
-
