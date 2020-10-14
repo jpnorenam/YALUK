@@ -659,7 +659,7 @@
 	LOGICAL(4) triangular
 
 
-	IF (triangular .EQ. .FALSE.) THEN
+	IF (triangular .EQV. .FALSE.) THEN
 		i1 = (Ih1/eta1)*(((ta/tao11)**n1)/(1+((ta/tao11)**n1)))*DEXP(-ta/tao21)
 		IF (Ih2 .EQ.0 .OR. eta2 .EQ.0) THEN
 			i2=0.D0
@@ -701,7 +701,7 @@
 		di1,di2,a,b
 	LOGICAL(4) triangular
 	
-	IF (triangular .EQ. .FALSE.) THEN
+	IF (triangular .EQV. .FALSE.) THEN
 		a=(ta/tao11)**n1
 		b=(ta/tao12)**n2
 

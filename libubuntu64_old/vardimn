@@ -1,0 +1,15 @@
+#!/bin/sh
+if [ $# != 1 ] ; then
+	echo
+	echo "Usage: vardimn listsize.ext"
+	echo
+	exit
+fi
+rm -f newmods.*
+rm -f dimdef.*
+rm -f comtac.o
+./vardim  <  $1
+mv newmods.for  newmods.f
+mv dimdef.for  dimdef.f
+ls -l newmods.*
+ls -l dimdef.*

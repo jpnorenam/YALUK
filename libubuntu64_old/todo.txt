@@ -1,0 +1,80 @@
+Assuming you are root, or you are adding sudo before each command.
+
+To install DISLIN package:
+
+From 
+
+https://www.mps.mpg.de/dislin/
+Downloads
+Distributions
+Linux
+I586
+
+Dowload the file
+
+dislin-nn.m.linux.i586.deb
+
+and install it
+
+dpkg -i dislin-nn.m.linux.i586.deb
+
+nn version number
+m  release number
+
+
+-----------------------
+
+
+libXm.so.4
+==========
+
+LibXm.so.4 (from libmotif library) is required by DISLIN
+
+To obtain libXm.so.4, libmotif4 must be installed:
+
+To install the library, send
+
+apt-get install libmotif4
+
+or
+
+Obtain the files
+
+libmotif4_2.3.3-5ubuntu1_i386.deb
+libmotif4_2.3.3-5ubuntu2_i386.deb
+
+Install libmotif:
+
+dpkg -i libmotif4_2.3.3-5ubuntu1_i386.deb
+dpkg -i libmotif4_2.3.3-5ubuntu2_i386.deb
+
+g++ is required to install ncurses, ncurses is required by 
+gtpplot and ATP
+
+apt-get install g++
+
+Obtain ncurses:
+
+http://ftp.gnu.org/pub/gnu/ncurses/
+
+Download the file ncurses-5.9.tar.gz
+
+Install ncurses:
+
+gzip -d ncurses-5.9.tar.gz
+tar -xvf ncurses-5.9.tar
+cd ncurses-5.9
+./configure
+make
+make install
+cd ..
+
+To compile Linux ATP, it is necessary the gfortran compiler:
+
+apt-get install gfortran
+
+
+
+ 
+
+

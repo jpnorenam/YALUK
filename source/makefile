@@ -14,7 +14,8 @@ FOR = gfortran
 
 OBJECTS  = yaluk_exec.o \
 		       yaluk_init.o \
-					 em_field_funct.f
+					 em_field_funct.o \
+					 basic_functions.o
 
 # ------------------------
 
