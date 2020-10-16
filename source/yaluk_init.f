@@ -215,8 +215,8 @@ CLOSE (UNIT=11)
 
 1012 SELECT CASE(ERRNUM>0)
 	CASE (.TRUE.)
-			!write(*,*) 'Configuration file not founded:',dir
-			WRITE(*,*) 'Configuration file not founded:',TRIM(dir)
+			!write(*,*) 'Configuration file not founded:',dir, 
+			WRITE(*,*) 'Configuration file not founded:',TRIM(dir),'/',archivo
 			write(*,*) 'please enter name file:'
 			read(*,*) archivo
 	END SELECT 
@@ -267,18 +267,21 @@ CLOSE (UNIT=11)
 
 	CLOSE (UNIT=12)
 	!status = CHANGEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-	CALL CHDIR(dir//'\'//casename(1:LEN_TRIM(casename)), status_int)
+	write(*,*) 'Trying to open: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
+	CALL CHDIR(TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
+
 		IF (status_int .EQ. 0) THEN
 				!dir = FILE$CURDRIVE
 				!length = GETDRIVEDIRQQ(dir)
 				CALL GETCWD(dir, status_int)
-			write(*,*) 'Current Directory for cases:  ',TRIM(dir)
+			write(*,*) 'Current Directory for cases: ',TRIM(dir)
 		ELSE
 			!status = MAKEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-			CALL SYSTEM( 'mkdir ' // dir//'\'//casename(1:LEN_TRIM(casename)), status_int)
+			write(*,*) 'Trying to create: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
+			CALL SYSTEM( 'mkdir ' //TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
 			IF (status_int .EQ. 0) THEN
 				!write(*,*) ' Directory for cases was created ',dir(1:length)//'\'//casename(1:LEN_TRIM(casename))
-				write(*,*) ' Directory for cases was created ',dir//'\'//casename(1:LEN_TRIM(casename))
+				write(*,*) ' Directory for cases was created ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
 				write(*,*) '**************************************************************'
 				write(*,*) '*  PLEASE PUT THE LINE AND MISCELANEO FILES IN THIS DIRECTORY*'
 				write(*,*) '**************************************************************'
@@ -286,10 +289,11 @@ CLOSE (UNIT=11)
 
 			ELSE
 				!write(*,*) ' Error Creating Directory: ',dir(1:length)//'\'//casename(1:LEN_TRIM(casename))
-				write(*,*) ' Error Creating Directory: ',dir//'\'//casename(1:LEN_TRIM(casename))
+				write(*,*) ' Error Creating Directory: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
 				write(*,*) ' Please check permissions'
 			ENDIF
 		END IF
+
 		!****************************************************************************
 		!OPENING LINE DATA FOR CALCULATING t0
 		! CALCULATING MAXIMUM KMAXT
@@ -300,8 +304,9 @@ CLOSE (UNIT=11)
 		t0_max=0
 		Xvar(10)=0 !número máximo de divisiones
 		IF (nlin.GT.0)		THEN
-		121		FORMAT(I5.5)
+		
 		WRITE(ncase_s,FMT=121) ncase
+		121		FORMAT(I5.5)
 			CALL OPEN_CORR_FILE (Ih1,Ih2,tao11,tao21,tao12,tao22,n1,n2,X0,Y0,ncase_s)
 			CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE2,Conductividad,o,e,dx,triangular,dist_camp)
 			DO i=1,nlin
@@ -372,11 +377,6 @@ CLOSE (UNIT=11)
 
 		END SELECT
 ERRNUM=0
-
-
-
-
-
 	
 !*		-----------------------
 !*		Setting Input Variables
