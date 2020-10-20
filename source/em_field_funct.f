@@ -10,17 +10,17 @@
 	SUBROUTINE	EMFIELD(SIZE_T, EZ, EH,ang,Icorr,tcorr,i02,i12,kcampo,t0_min)
 	IMPLICIT NONE
 	
-	INTEGER i,SIZE_T,j, SIZE1,SIZE2, gn1v,gn2v,gn3v,gn1h,gn2h,		&
+	INTEGER i,SIZE_T,j, SIZE_1,SIZE_2, gn1v,gn2v,gn3v,gn1h,gn2h,		&
       gn3h,gn4h,gn5h,gn6h,gn1b,gn2b, conductividad, 	&
       indi,inds
 
 	DOUBLE PRECISION c,v, zlam, r, h,Ih1, Ih2, tao11, tao12, tao21, &
      tao22, n1, n2, eta1, eta2,t,ang,e0,dx,								&
-     EIRZ(SIZE_T,1), EELZ(SIZE_T,1), EZ2(SIZE2,1),EZ(SIZE_T,1),			&
+     EIRZ(SIZE_T,1), EELZ(SIZE_T,1), EZ2(SIZE_2,1),EZ(SIZE_T,1),			&
      B(SIZE_T,1), BRAD(SIZE_T,1),							&
-     EIRR1, EELR1,EIRR2, EELR2, EH(SIZE_T,1),EH2(SIZE2,1),			&
+     EIRR1, EELR1,EIRR2, EELR2, EH(SIZE_T,1),EH2(SIZE_2,1),			&
      EIRR(SIZE_T,1), EELR(SIZE_T,1),EX2(SIZE_T,1),	&
-     tolh,tolz,tolb,B2(SIZE2,1),m2(SIZE_T,1),m22(SIZE_T,1),		&
+     tolh,tolz,tolb,B2(SIZE_2,1),m2(SIZE_T,1),m22(SIZE_T,1),		&
      beta, Hcan, mu, c1, c3, dt,dt2, zini,zfin,zfin2,pi,RSLT, &
      tini,ind,er2,e,o,t2,c4,kcampo,						&
 	 Icorr(*),tcorr(*),i02(*),i12(*),trapzd,midexp,chint,t0_min
@@ -29,7 +29,7 @@
 
 	COMMON /COND2/ conductividad
 	COMMON /COND/  o,e
-	COMMON /LINE/  SIZE1,SIZE2
+	COMMON /LINE_YALUK/  SIZE_1,SIZE_2
 	COMMON /ITYPE/ triangular
 	!*	----------------------------------------------
 	!Cm	COMMON DATA FOR LINE DESCRIPTION
@@ -126,7 +126,7 @@
 !$OMP DO
 
 !10 - start of cycle of EM calculation
-	DO i = 1,SIZE1  !10
+	DO i = 1,SIZE_1  !10
 	t=t+dt
 	    IF (t .LE. tini) THEN
 			EZ(i,1) = 0.D0
@@ -204,10 +204,10 @@
 				EH(i,1) = (EELR(i,1)+EIRR(i,1)) !Without taking into account the incidence angle
 			END IF		
 		END IF
-	    B2(1,1) =B(SIZE1,1)
-		EH2(1,1) =EH(SIZE1,1)	
+	    B2(1,1) =B(SIZE_1,1)
+		EH2(1,1) =EH(SIZE_1,1)	
 								  
-        EZ2(1,1) =EZ(SIZE1,1)
+        EZ2(1,1) =EZ(SIZE_1,1)
 	END DO 
 
 !$OMP END DO  nowait
@@ -222,10 +222,10 @@
 !Cm	Check "if" the second window is outside of the calculation window
 !*	-----------------------------------------------------------------
 
-	IF (SIZE1 .LT. SIZE_T) THEN	
+	IF (SIZE_1 .LT. SIZE_T) THEN	
 	  
   
-	  DO  j = 2,SIZE2
+	  DO  j = 2,SIZE_2
 
 	    IF (t .LE. tini) THEN
 			EZ(j,1) = 0
@@ -266,11 +266,11 @@
 			IF (kcampo.EQ.1) THEN ! Evaluating if it is neccesary to calculate the vertical component
 
 				CALL INTEGRAL(EZP,0.D0,zfin,RSLT,tolz,gn1v)
-				EIRZ(SIZE1+j,1) =(2*c3) *RSLT
+				EIRZ(SIZE_1+j,1) =(2*c3) *RSLT
 
 				CALL INTEGRAL2(EELZP,0.D0,zfin,RSLT, tolz,gn3v,Icorr,tcorr)
-				EELZ(SIZE1+j,1) = 2*c3*RSLT
-				EZ2(j,1) = EIRZ(SIZE1+j,1)+EELZ(SIZE1+j,1)
+				EELZ(SIZE_1+j,1) = 2*c3*RSLT
+				EZ2(j,1) = EIRZ(SIZE_1+j,1)+EELZ(SIZE_1+j,1)
 			ELSE
 				EZ2(j,1) = 0
 			END IF
@@ -299,9 +299,9 @@
 				CALL INTEGRAL2(EELRP,0.D0,zfin2,RSLT, tolh,gn6h,Icorr,tcorr)
 				EELR2 = 3*r*c3*RSLT
 		
-				EIRR(SIZE1+j,1) = EIRR1 + EIRR2
-				EELR(SIZE1+j,1) = EELR1 + EELR2
-				EH2(j,1) = EELR(SIZE1+j,1)+EIRR(SIZE1+j,1)
+				EIRR(SIZE_1+j,1) = EIRR1 + EIRR2
+				EELR(SIZE_1+j,1) = EELR1 + EELR2
+				EH2(j,1) = EELR(SIZE_1+j,1)+EIRR(SIZE_1+j,1)
 			END IF
 		END IF
 			
@@ -313,13 +313,13 @@
 
         !t=dt2
 		t=t0_min+dt2
-	  DO 25  i=SIZE1+1,SIZE_T
+	  DO 25  i=SIZE_1+1,SIZE_T
 	   	
 			t=t+dt
 			!ind=(t)/dt2
 			ind=(t-t0_min)/dt2
 			indi=floor(ind)
-	   IF (indi .LT. SIZE2) THEN
+	   IF (indi .LT. SIZE_2) THEN
 		  inds=indi+1
 	 	  EH(i,1)=EH2(indi,1)+(EH2(inds,1)-EH2(indi,1))*(ind-indi)
 		  IF (kcampo.EQ.1) THEN 

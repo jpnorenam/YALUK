@@ -265,7 +265,8 @@
 	IMPLICIT NONE
 	INTEGER gn, i
 	DOUBLE PRECISION xlow, xhigh, integ, jacob, x(gn), cb(gn),	&
-     cw(gn), FUN, y(gn), int
+     cw(gn), y(gn), int, FUN
+	 EXTERNAL FUN
 	int=0.D0
 	integ=0.D0
 	CALL QRULE(gn,cb,cw)
@@ -550,7 +551,7 @@
       DOUBLE PRECISION a,b,s,func,var1(*),var2(*)	
       EXTERNAL func
       INTEGER it,j
-      REAL del,sum,tnm,x
+      DOUBLE PRECISION del,sum,tnm,x
       if (n.eq.1) then
         s=0.5*(b-a)*(func(a,var1,var2)+func(b,var1,var2))
       else

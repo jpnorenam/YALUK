@@ -82,7 +82,7 @@ SUBROUTINE yaluk_init(xdata,xin,xout,xvar)
 	
 IMPLICIT NONE
 
-INTEGER SIZE_T,SIZE_T2,SIZE3,SIZE_ini, i, j, k,cond, kmax, SIZE1,SIZE2,g,n,ind_ini1,ind_ini,					&
+INTEGER SIZE_T,SIZE_T2,SIZE3,SIZE_ini, i, j, k,cond, kmax, SIZE_1,SIZE_2,g,n,ind_ini1,ind_ini,					&
      nmaxi1,GNI,conductividad,num_lin,ALLOC_ERR,ERRNUM,ERRNUM2,ERRNUM_2
 DOUBLE PRECISION xin(*), xout(*), xvar(*),xdata(*)
 DOUBLE PRECISION r, rant,dt, tmax,XA,XB, dt3,scale_factor,				&
@@ -169,7 +169,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Icorr(:),tcorr(:),i02(:),i12(:)
 
 COMMON /COND2/ conductividad
 COMMON /COND/  o,e
-COMMON /LINE/  SIZE1,SIZE2
+COMMON /LINE_YALUK/  SIZE_1,SIZE_2
 COMMON /POINT/ r,h
 COMMON /DAT/   v,zlam,Hcan,dt, dt2
 COMMON /DAT2/ Ih1, Ih2, tao11, tao12,tao21,tao22, n1, n2, eta1, eta2
@@ -308,7 +308,7 @@ CLOSE (UNIT=11)
 		WRITE(ncase_s,FMT=121) ncase
 		121		FORMAT(I5.5)
 			CALL OPEN_CORR_FILE (Ih1,Ih2,tao11,tao21,tao12,tao22,n1,n2,X0,Y0,ncase_s)
-			CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE2,Conductividad,o,e,dx,triangular,dist_camp)
+			CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,Conductividad,o,e,dx,triangular,dist_camp)
 			DO i=1,nlin
 				120 FORMAT(I3.3) 
 				WRITE(indarchiv,FMT=120) int(i)
@@ -435,7 +435,7 @@ t=Xin(1)
 !*         READING MISCELANEOUS PARAMETERS
 !*		_________________________________________________________________
 
-CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE2,Conductividad,o,e,dx,triangular,dist_camp)
+CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,Conductividad,o,e,dx,triangular,dist_camp)
 
 !		------------------------------------
 !        Reading Lightning Current Parameters
@@ -479,30 +479,36 @@ tmax1=1.8*(tao11**n1*tao21*n1)**(1/(1+n1))
 t_second=10.e-6 !maximum time for calculation on the farthest line
 dt3=.5e-6           !discretization time for improving matrix size
 		ENDSELECT 
-   
+ write(*,*) 'Line 482 pass'  
 scale_factor=real(nint(dt3/dt))
+write(*,*) 'Scale Factor: ',scale_factor  
 dt3=dt*scale_factor      
-SIZE_T = nint(tmax / dt)		!number of time division for the whole window 
-SIZE1= nint(tmax1/dt)			!number of time division for first window
+write(*,*) 'dt3: ',dt3
+SIZE_T = nint(tmax / dt)
+write(*,*) 'SIZE_T: ',SIZE_T		!number of time division for the whole window 
+write(*,*) 'SIZE_1: ',SIZE_1
+SIZE_1= nint(tmax1/dt)
+write(*,*) 'SIZE_1: ',SIZE_1			!number of time division for first window
 !***********************************************************
 ! including new size elements for reducing matrix dimension
-!-----------------------------------------------------------
-SIZE_ini=SIZE1+nint((t0_max+t_second)/dt)
+ write(*,*) 'Line 489 pass' !-----------------------------------------------------------
+SIZE_ini=SIZE_1+nint((t0_max+t_second)/dt)
 IF (SIZE_T.LE.SIZE_ini-nint(dt3/dt)) THEN
     SIZE_ini=SIZE_T-1
     SIZE3=1
 ELSE
     SIZE3=nint((tmax-real(SIZE_ini)*dt)/dt3)
 ENDIF
-
+write(*,*) 'Line 497pass'
 SIZE_T2=SIZE_ini+SIZE3
 !***********************************************************
 dti=.05D-8
 dti1=dti
-nmaxi1=nint(dt*SIZE1/dti)
-dt2= (tmax-tmax1)/SIZE2 !time step for second window
-SIZE2=SIZE2+1			!number of time division for first window
-
+nmaxi1=nint(dt*SIZE_1/dti)
+dt2= (tmax-tmax1)/SIZE_2 !time step for second window
+ write(*,*) 'Line 504 pass' 
+SIZE_2=SIZE_2+1			!number of time division for first window
+ write(*,*) 'Line 505 pass' 
 a=ATAN2((YA0-YB0),(XA0-XB0))
 XA=(XA0-X0)*cos(a)+(YA0-Y0)*sin(a)
 XB=(XB0-X0)*cos(a)+(YB0-Y0)*sin(a)
@@ -542,7 +548,7 @@ IF( .NOT. ALLOCATED(Evini)) THEN
 		  Ex(cond,kmax+1,SIZE_T2+2),STAT=ALLOC_ERR)
 ENDIF
 IF( .NOT. ALLOCATED(Icorr)) THEN
-    ALLOCATE (Icorr(nmaxi1+11*SIZE2),tcorr(nmaxi1+11*SIZE2),i02(SIZE_T+2),i12(SIZE_T+2),STAT=ALLOC_ERR_I) 
+    ALLOCATE (Icorr(nmaxi1+11*SIZE_2),tcorr(nmaxi1+11*SIZE_2),i02(SIZE_T+2),i12(SIZE_T+2),STAT=ALLOC_ERR_I) 
 ENDIF
 !-------------------------------------------------------
 !ALLOC_ERR_I - INDICA SI LA CORRIENTE YA FUE CALCULADA
@@ -765,14 +771,14 @@ IF (campo_distante .EQV. .FALSE.) THEN
 
 1     CONTINUE
 		ti=ti-dti  !resting the extra dti no calculated
-        dti=(dt*SIZE_T-ti)/(10*SIZE2)
+        dti=(dt*SIZE_T-ti)/(10*SIZE_2)
 
 !*******************************************************
 !	--------------------------
 !	Calculating Second Window
 !	--------------------------
 !*******************************************************
-      DO 2, j=1,11*SIZE2
+      DO 2, j=1,11*SIZE_2
 	    ti=ti+dti
 		IF (triangular .EQV. .FALSE.) THEN
 			!*****************************
@@ -807,7 +813,7 @@ IF (campo_distante .EQV. .FALSE.) THEN
 !************************************************
 
 !	OPEN(UNIT=3, FILE='integrali.txt', ACCESS='SEQUENTIAL',STATUS='UNKNOWN')
- !    WRITE(UNIT=3,FMT='(1X,E12.6E2,E12.6E2)')(tcorr(j),Icorr(j), j=1,(nmaxi1+10*SIZE2+2))
+ !    WRITE(UNIT=3,FMT='(1X,E12.6E2,E12.6E2)')(tcorr(j),Icorr(j), j=1,(nmaxi1+10*SIZE_2+2))
 !	CLOSE(3)
 
 !*	--------------------------------------------------------------
@@ -872,18 +878,18 @@ IF (campo_distante .EQV. .FALSE.) THEN
 		END IF
 			t02=r/c; !initial time of the signal
 
-		!SIZE1= (tmax1+t02-t0)/dt			!considering t0 for initiation
-		SIZE1= (tmax1+t02-t0_min)/dt
-		!SIZE2=(tmax-(tmax1+t02-t0))/dt2	!considering t0 for initiation
-		SIZE2=(tmax-(tmax1+t02-t0_min))/dt2
-		SIZE2=SIZE2+2
-		IF (SIZE2 .LT. 2) THEN
-			SIZE2=2
+		!SIZE_1= (tmax1+t02-t0)/dt			!considering t0 for initiation
+		SIZE_1= (tmax1+t02-t0_min)/dt
+		!SIZE_2=(tmax-(tmax1+t02-t0))/dt2	!considering t0 for initiation
+		SIZE_2=(tmax-(tmax1+t02-t0_min))/dt2
+		SIZE_2=SIZE_2+2
+		IF (SIZE_2 .LT. 2) THEN
+			SIZE_2=2
 		END IF
-		!IF ((SIZE1*dt+t02-t0) .GT. tmax) THEN
-		IF ((SIZE1*dt+t02-t0_min) .GT. tmax) THEN
-			SIZE1=tmax/dt
-			SIZE2=2
+		!IF ((SIZE_1*dt+t02-t0) .GT. tmax) THEN
+		IF ((SIZE_1*dt+t02-t0_min) .GT. tmax) THEN
+			SIZE_1=tmax/dt
+			SIZE_2=2
 		END IF
 		  IF (1.005 .GT. abs(rant/r) .AND. abs(rant/r) .GT. .995 .AND. h .EQ. hm(1)) THEN
 			n=nint(abs(r-rant)/c/dt)+1 
@@ -960,7 +966,7 @@ write(UNIT = 16) Evini,Evfin,Ex,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 close (UNIT = 16)
 
 open(UNIT = 17, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1017,IOSTAT=ERRNUM)
-write(UNIT = 17) v,zlam,Hcan,Conductividad,o,e,dx,Ih1,Ih2,tao11,tao21,n1,n2,X0,Y0,rc,YA0,YB0,XA0,XB0,hm,Xi,kmax,t0
+write(UNIT = 17) v,zlam,Hcan,conductividad,o,e,dx,Ih1,Ih2,tao11,tao21,n1,n2,X0,Y0,rc,YA0,YB0,XA0,XB0,hm,Xi,kmax,t0
 close (UNIT = 17)
 				 
 1016 SELECT CASE(ERRNUM>0)
@@ -984,7 +990,7 @@ write(UNIT = 19) Evini,Evfin,Ex,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 close (UNIT = 19)
 
 open(UNIT = 18, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1018,IOSTAT=ERRNUM)
-write(UNIT = 18) v,zlam,Hcan,Conductividad,o,e,dx,Ih1,Ih2,tao11,tao21,n1,n2,X0,Y0,rc,YA0,YB0,XA0,XB0,hm,Xi,kmax,t0
+write(UNIT = 18) v,zlam,Hcan,conductividad,o,e,dx,Ih1,Ih2,tao11,tao21,n1,n2,X0,Y0,rc,YA0,YB0,XA0,XB0,hm,Xi,kmax,t0
 close (UNIT = 18)
 1019 SELECT CASE(ERRNUM>0)
 		CASE (.TRUE.)
@@ -1133,23 +1139,36 @@ END SUBROUTINE
 
 
 
-SUBROUTINE OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE2,Conductividad,o,e,dx,triangular,dist_camp)
+SUBROUTINE OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,conductividad,o,e,dx,triangular,dist_camp)
 !DEC$ ATTRIBUTES, DLLEXPORT::OPEN_MISC_FILE
 
-DOUBLE PRECISION v,zlam,Hcan,tmax1,Conductividad,o,e,dx,dist_camp
-INTEGER i, ERRNUM, SIZE2
-LOGICAL triangular
-
+DOUBLE PRECISION, INTENT(OUT) :: v,zlam,Hcan,tmax1,o,e,dx,dist_camp
+INTEGER, INTENT(OUT) :: conductividad, SIZE_2
+INTEGER :: i, ERRNUM
+DOUBLE PRECISION :: SIZE_2D
+LOGICAL, INTENT(OUT) :: triangular
+	  WRITE(*,*) 'Reading miscelaneo.txt'
       OPEN (UNIT = 8, FILE = 'miscelaneo.txt', STATUS = 'OLD', ERR=1008,IOSTAT=ERRNUM)
-      !READ   (8, *) v
-	  !READ   (8, *) zlam
-      !READ   (8, *) Hcan
-      !READ   (8, *) tmax1
-      !READ   (8, *) SIZE2
-      !READ   (8, *) Conductividad
-      !READ   (8, *) o
-      !READ   (8, *) e
-	  !READ   (8, *) dx
+      WRITE(*,*) 'v: ',v
+	  READ   (8, *) v
+	  WRITE(*,*) 'R v: ',v
+	  READ   (8, *) zlam
+	  WRITE(*,*) 'zlam: ',zlam
+      READ   (8, *) Hcan
+	  WRITE(*,*) 'Hcan: ',Hcan
+      READ   (8, *) tmax1
+	  WRITE(*,*) 'tmax1: ',tmax1, 'SIZE_2: ',SIZE_2
+      READ   (8, *) SIZE_2
+	  WRITE(*,*) 'SIZE_2: ',SIZE_2
+	  !SIZE_2=int(SIZED)
+      READ   (8, *) conductividad
+	  WRITE(*,*) 'Conductividad: ',Conductividad
+      READ   (8, *) o
+	  WRITE(*,*) 'o: ',o
+      READ   (8, *) e
+	  WRITE(*,*) 'e: ',e
+	  READ   (8, *) dx
+	  WRITE(*,*) 'dx: ',dx
 	  
 	  ! IF (.NOT. EOF(8)) THEN
 	  !		
@@ -1166,43 +1185,41 @@ LOGICAL triangular
 	  !	END IF
 
       nline = 0
-	  DO while (.true.)
+!	  DO while (.true.)
 		nline = nline + 1
-		SELECT CASE(nline)
-			CASE(1)
-			READ   (8, *, end=1006) v
-			CASE(2)
-			READ   (8, *, end=1006) zlam
-			CASE(3)
-			READ   (8, *, end=1006) Hcan
-			CASE(4)
-			READ   (8, *, end=1006) tmax1
-			CASE(5)
-			READ   (8, *, end=1006) SIZE2
-			CASE(6)
-			READ   (8, *, end=1006) Conductividad
-			CASE(7)
-			READ   (8, *, end=1006) o
-			CASE(9)
-			READ   (8, *, end=1006) e
-			CASE(10)
-			READ   (8, *, end=1006) dx
+		!SELECT CASE(nline)
+		!	CASE(1)
+		!	READ   (8, *, end=1006) v
+		!	CASE(2)
+		!	READ   (8, *, end=1006) zlam
+		!	CASE(3)
+		!	READ   (8, *, end=1006) Hcan
+		!	CASE(4)
+		!	READ   (8, *, end=1006) tmax1
+		!	CASE(5)
+		!	READ   (8, *, end=1006) SIZE_2
+		!	CASE(6)
+		!	READ   (8, *, end=1006) Conductividad
+		!	CASE(7)
+		!	READ   (8, *, end=1006) o
+		!	CASE(9)
+		!	READ   (8, *, end=1006) e
+		!	CASE(10)
+	!DO while (.true.)
 			i = 0
-			CASE(11)
+			dist_camp=5000			
 			READ   (8, *, end=1007) i ! waveform shape
-			dist_camp=5000
-			CASE(12)
 			READ   (8, *, end=1007) dist_camp  !Maximum distance for calculating EM Fields
-		END SELECT 
-	  ENDDO
+		!END SELECT 
+	  !ENDDO
 	  1006 continue
 	  write(*,*) 'Usando formato de miscelaneo antiguo'
 	  1007 continue
 
 	  IF (i .EQ. 1) THEN 
-	  	triangular=.TRUE.
+	  	triangular=1
 	  ELSE
-	  	triangular=.FALSE.
+	  	triangular=0
 	  ENDIF
 
 		
@@ -1215,7 +1232,7 @@ LOGICAL triangular
 	    	zlam = 2000		!- Atenuation for MTL model use 0 for TL model
 		    Hcan = 8000		!- Channel Height
     		tmax1= 3.d-6	!- simulation time for first window
-	    	SIZE2=30		!- Number of samples for the second window
+	    	SIZE_2=30		!- Number of samples for the second window
 		    Conductividad=1	!- Use 1(yes) to consider Conductivity
     		o=1.D-3			!- Ground Conductivity
 	    	e=10			!- Relative ground permitivity

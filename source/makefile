@@ -21,7 +21,7 @@ OBJECTS  = yaluk_exec.o \
 # ------------------------
 
 CFLAGS = -O2
-FFLAGS = -O2 -ffree-form -ffree-line-length-512 -std=gnu -w
+FFLAGS = -g -ffree-form -ffree-line-length-512 -std=gnu -w
 
 LIBRARY=libyaluk.a
 

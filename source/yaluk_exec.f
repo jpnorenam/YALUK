@@ -56,7 +56,7 @@ SUBROUTINE yaluk_exec(xdata,xin,xout,xvar)
 !USE DFLIB !visual fortran 6.0
 	INTEGER SIZE, k,g,n,cond,  kmax, 					&
      conductividad,ALLOC_ERR,ERRNUM,cond_s,kmaxt,max_lin,num_lin,cond_max,       &
-     ind_ini,ind_ini1,i,ind_f,SIZE2,SIZE3,SIZE_ini              !Data used for interpolation
+     ind_ini,ind_ini1,i,ind_f,SIZE_2,SIZE3,SIZE_ini              !Data used for interpolation
 	DOUBLE PRECISION xin(*), xout(*), xvar(*),xdata(*)
 	DOUBLE PRECISION dt, tmax,c,t,o,e,ti,pi,n_VR, 	&
          mu,e0,taog,F,ferrc,valmin,Fe,EE,dx2,dx,dt_s,tmax_s,t0,t0_min,           &
@@ -107,7 +107,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 	conductividad=Xvar(6)
 	t0=Xvar(7)
 	dx2=Xvar(8)	
-	SIZE2=nint(Xvar(12)) !reading size for matrix reduced
+	SIZE_2=nint(Xvar(12)) !reading size for matrix reduced
     SIZE3=nint(Xvar(13)) !matrix size without interpolation
     SIZE_ini=nint(Xvar(15))
     dt3=Xvar(14)
@@ -139,7 +139,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 		STAT=ALLOC_ERR)
 		!write(*,*) 'Err ',ALLOC_ERR
 		ALLOC_ERR=0
-	ALLOCATE	(Ex(cond_max,kmaxt,SIZE2+2,max_lin),Evini(SIZE2+2,max_lin),Evfin(SIZE2+2,max_lin),				&				
+	ALLOCATE	(Ex(cond_max,kmaxt,SIZE_2+2,max_lin),Evini(SIZE_2+2,max_lin),Evfin(SIZE_2+2,max_lin),				&				
 		dI(SIZE+2,cond_max,kmaxt,max_lin),	&
 		VR(cond_max,SIZE+2,max_lin),Vant(cond_max,1:kmaxt,max_lin),Iant(cond_max,1:kmaxt,max_lin),&
 		Mi1c(cond_max,cond_max,max_lin),Mi2c(cond_max,cond_max,max_lin),Mi3c(cond_max,cond_max,max_lin),Mi4c(cond_max,cond_max,max_lin),Mv1c(cond_max,cond_max,max_lin),Mv2c(cond_max,cond_max,max_lin),Mv3c(cond_max,cond_max,max_lin),&
@@ -153,7 +153,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 		!Evini2,Evfin2,Ex2,D3i,D5,h,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 		
 		ALLOC_ERR=0
-	ALLOCATE (h(cond),Ex2(cond,kmax+1,SIZE2+2),Evini2(SIZE2+2),Evfin2(SIZE2+2),  &
+	ALLOCATE (h(cond),Ex2(cond,kmax+1,SIZE_2+2),Evini2(SIZE_2+2),Evfin2(SIZE_2+2),  &
 		Exn(cond,kmax+1),Exn_1(cond,kmax+1),Exn_2(cond,kmax+1),Exn_1p(cond,kmax+1),& !matrix for replacing and interpolation
 		A1(cond,1),A2(cond,1),A5(cond,1),A6(cond,1),&
      	A3(cond,1),A4(cond,1),B1(cond,1),B2(cond,1),B3(cond,1),Vi(cond,kmax+1),Ii(cond,kmax+1),								&
@@ -189,7 +189,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 !	ENDIF
 
 h(1:cond)=Xvar(ind_ini1:ind_ini1-1+cond)
-
+	write(*,*) 'Line 193'
 IF (t.EQ.0) THEN
 	VR(:,:,num_lin)=0.D0
 ELSE
@@ -210,7 +210,7 @@ ELSE
 
 ENDIF
 
-
+write(*,*) 'line 213'
 IF (n .LE. 1) THEN
 	OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM)
 	READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min
@@ -236,9 +236,9 @@ IF (n .LE. 1) THEN
 	Zc_t(1:cond,1:cond,num_lin)=Zc(1:cond,1:cond)
 	Zci_t(1:cond,1:cond,num_lin)=Zci(1:cond,1:cond)
 	close(12)
-	Ex(1:cond,1:kmax+1,1:SIZE2+2,num_lin)=Ex2(1:cond,1:kmax+1,1:SIZE2+2)
-	Evini(1:SIZE2+2,num_lin)=Evini2(1:SIZE2+2)
-	Evfin(1:SIZE2+2,num_lin)=Evfin2(1:SIZE2+2)
+	Ex(1:cond,1:kmax+1,1:SIZE_2+2,num_lin)=Ex2(1:cond,1:kmax+1,1:SIZE_2+2)
+	Evini(1:SIZE_2+2,num_lin)=Evini2(1:SIZE_2+2)
+	Evfin(1:SIZE_2+2,num_lin)=Evfin2(1:SIZE_2+2)
 
 
 1004 SELECT CASE(ERRNUM>0)
@@ -251,7 +251,7 @@ END IF
 IF (t0 .LT. dt) THEN
  t0=1.001*dt
 ENDIF
-
+write(*,*) 'line 254  t0: ', t0
 !IF (t .GE. t0-dt) THEN 
 IF (t .GE. t0) THEN
 !write(*,*) 'Mi4=',Mi4
@@ -372,7 +372,7 @@ IF (t .GE. t0) THEN
 	D5(1:cond,1:cond)=D5c(1:cond,1:cond,num_lin)  
 	Zc(1:cond,1:cond)=Zc_t(1:cond,1:cond,num_lin)  
 	Zci(1:cond,1:cond)=Zci_t(1:cond,1:cond,num_lin)  
- 
+ write(*,*) 'line 375  ' 
     !*************************************************
     !INTERPOLATION PROCESS
     !-------------------------------------------------
@@ -415,6 +415,7 @@ IF (t .GE. t0) THEN
     !--------------------------------------------------
     ! ENDING INTERPOLATION
     !***************************************************
+	write(*,*) 'line 418 numlin:',num_lin
 	DO 11,k=3,(kmax-1)
 
 !		A1(:,1)=-dt*(Iant(:,k+1,num_lin)-Iant(:,k-1,num_lin))/(dx+dx)
@@ -482,6 +483,7 @@ IF (t .GE. t0) THEN
 			Vp(1:cond,k,num_lin)=0.D0
 	ENDIF
 11	END DO
+write(*,*) 'line 486'
 !       MATRICES CONSTANTES PARA EL CALCULO DE DIFERENCIAS 
 !                        FINITAS
 !* D3i: Constante inicio línea  inv(dx/dt*C*Zc+unos)
@@ -529,7 +531,7 @@ Vrfin(1:cond,1)=Vrfin(1:cond,1)-(Exn_1(1:cond,kmax)+Exn(1:cond,kmax+1))*dx2*.5
 !---------------------------------------------------------
 V1ini(1:cond)=Vi(1:cond,2)+Vi(1:cond,2) - Vrini(1:cond,1) -Evn_ini(2)*h(1:cond) -(Exn_1p(1:cond,1)+Exn(1:cond,2))*dx2*.5+Vp(1:cond,2,num_lin)
 V1fin(1:cond)=Vi(1:cond,kmax)+Vi(1:cond,kmax) - Vrfin(1:cond,1) -Evn_fin(2)*h(1:cond) +(Exn_1p(1:cond,kmax+1)+Exn(1:cond,kmax))*dx2*.5+Vp(1:cond,kmax,num_lin)
-
+write(*,*) 'line 534'
 !               Establishing Past Values to Iant
 !---------------------------------------------------------
 Iant(1:cond,1:kmax+1,num_lin)=Ii(1:cond,:)
@@ -611,9 +613,9 @@ ELSE
 
 
 ENDIF
-
+write(*,*) 'line 616'
 	VR(1:cond,2:n+1,num_lin)=VR(1:cond,1:n,num_lin)  ! realizando corrimiento del vector VR
-	!write(*,*)'Vr',VR(1,1:n)
+	write(*,*)'n: ',n,' cond:',cond,' n:',n, ' VR_',VR(cond,n,num_lin)
 	VR(1:cond,1,num_lin)=0.D0
 	ind_ini=ind_ini1+cond+6*cond*cond
 	Xvar(ind_ini       :ind_ini-1+  cond)=V1ini(1:cond) 
@@ -622,7 +624,7 @@ ENDIF
 	Xvar(ind_ini+3*cond:ind_ini-1+4*cond)=Vrini(1:cond,2)
 	Xvar(ind_ini+4*cond:ind_ini-1+5*cond)=Vrfin(1:cond,1)
 	Xvar(ind_ini+5*cond:ind_ini-1+6*cond)=Vrfin(1:cond,2)
-
+write(*,*) 'line 626'
 	ind_ini=ind_ini+6*cond
 
 !	DO i=1,cond
@@ -651,7 +653,7 @@ ENDIF
 
 DEALLOCATE (h,Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4,Zc,Zci,STAT=ALLOC_ERR)
 !	DEALLOCATE (Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,STAT=ALLOC_ERR)
-
+write(*,*) 'line 656'
 
 	END SUBROUTINE
 !********************************************************************************************
