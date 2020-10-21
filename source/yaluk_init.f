@@ -187,7 +187,7 @@ EXTERNAL IPULSE,BESSELI0,BESSELI1,comparar
 !kmaxt=100	! kmaxt; número máximo de divisiones en las líneas
 !max_lin=20	! max_lin: numero máxmio de líneas
 
-archivo(1:9)='yaluk.ini'
+archivo='yaluk.ini'
 ERRNUM=0
 
 
@@ -231,7 +231,7 @@ CLOSE (UNIT=11)
 		write(*,*) "******************************************************"
 
 
-	OPEN (UNIT = 12, FILE = archivo(1:LEN_TRIM(archivo)), STATUS = 'OLD', ERR=1012,IOSTAT=ERRNUM)
+	OPEN (UNIT = 12, FILE = TRIM(archivo), STATUS = 'OLD', ERR=1012,IOSTAT=ERRNUM)
 		!READ(12,*) casename !Case Name
 		!READ(12,*) ncase    !Case Number
 		!IF (.NOT. EOF(12)) THEN
@@ -247,21 +247,21 @@ CLOSE (UNIT=11)
 		!END IF
 
 		nline = 0
-		DO while (.true.)
-			nline = nline + 1
-			SELECT CASE(nline)
-			  CASE(1)
-			    READ (12, *, end=999) casename
-			  CASE(2)
-			    READ (12, *, end=999) ncase
+
+
 				nlin = 0
-			  CASE(3)
-			    READ (12, *, end=999) nlin
 				Xvar(11) = 6
-			  CASE(4)
+			    READ (12, *, end=999) casename
+
+			    READ (12, *, end=999) ncase
+
+
+			    READ (12, *, end=999) nlin
+
+
 			    READ (12, *, end=999) Xvar(11)
-			END SELECT 
-		ENDDO
+
+
 		999 continue
 
 

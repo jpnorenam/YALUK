@@ -189,7 +189,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 !	ENDIF
 
 h(1:cond)=Xvar(ind_ini1:ind_ini1-1+cond)
-	write(*,*) 'Line 193'
+
 IF (t.EQ.0) THEN
 	VR(:,:,num_lin)=0.D0
 ELSE
@@ -210,7 +210,7 @@ ELSE
 
 ENDIF
 
-write(*,*) 'line 213'
+
 IF (n .LE. 1) THEN
 	OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM)
 	READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min
@@ -251,7 +251,7 @@ END IF
 IF (t0 .LT. dt) THEN
  t0=1.001*dt
 ENDIF
-write(*,*) 'line 254  t0: ', t0
+
 !IF (t .GE. t0-dt) THEN 
 IF (t .GE. t0) THEN
 !write(*,*) 'Mi4=',Mi4
@@ -372,7 +372,7 @@ IF (t .GE. t0) THEN
 	D5(1:cond,1:cond)=D5c(1:cond,1:cond,num_lin)  
 	Zc(1:cond,1:cond)=Zc_t(1:cond,1:cond,num_lin)  
 	Zci(1:cond,1:cond)=Zci_t(1:cond,1:cond,num_lin)  
- write(*,*) 'line 375  ' 
+
     !*************************************************
     !INTERPOLATION PROCESS
     !-------------------------------------------------
@@ -415,7 +415,7 @@ IF (t .GE. t0) THEN
     !--------------------------------------------------
     ! ENDING INTERPOLATION
     !***************************************************
-	write(*,*) 'line 418 numlin:',num_lin
+
 	DO 11,k=3,(kmax-1)
 
 !		A1(:,1)=-dt*(Iant(:,k+1,num_lin)-Iant(:,k-1,num_lin))/(dx+dx)
@@ -483,7 +483,7 @@ IF (t .GE. t0) THEN
 			Vp(1:cond,k,num_lin)=0.D0
 	ENDIF
 11	END DO
-write(*,*) 'line 486'
+
 !       MATRICES CONSTANTES PARA EL CALCULO DE DIFERENCIAS 
 !                        FINITAS
 !* D3i: Constante inicio línea  inv(dx/dt*C*Zc+unos)
@@ -531,7 +531,7 @@ Vrfin(1:cond,1)=Vrfin(1:cond,1)-(Exn_1(1:cond,kmax)+Exn(1:cond,kmax+1))*dx2*.5
 !---------------------------------------------------------
 V1ini(1:cond)=Vi(1:cond,2)+Vi(1:cond,2) - Vrini(1:cond,1) -Evn_ini(2)*h(1:cond) -(Exn_1p(1:cond,1)+Exn(1:cond,2))*dx2*.5+Vp(1:cond,2,num_lin)
 V1fin(1:cond)=Vi(1:cond,kmax)+Vi(1:cond,kmax) - Vrfin(1:cond,1) -Evn_fin(2)*h(1:cond) +(Exn_1p(1:cond,kmax+1)+Exn(1:cond,kmax))*dx2*.5+Vp(1:cond,kmax,num_lin)
-write(*,*) 'line 534'
+
 !               Establishing Past Values to Iant
 !---------------------------------------------------------
 Iant(1:cond,1:kmax+1,num_lin)=Ii(1:cond,:)
@@ -613,9 +613,9 @@ ELSE
 
 
 ENDIF
-write(*,*) 'line 616'
+
 	VR(1:cond,2:n+1,num_lin)=VR(1:cond,1:n,num_lin)  ! realizando corrimiento del vector VR
-	write(*,*)'n: ',n,' cond:',cond,' n:',n, ' VR_',VR(cond,n,num_lin)
+	
 	VR(1:cond,1,num_lin)=0.D0
 	ind_ini=ind_ini1+cond+6*cond*cond
 	Xvar(ind_ini       :ind_ini-1+  cond)=V1ini(1:cond) 
@@ -624,7 +624,7 @@ write(*,*) 'line 616'
 	Xvar(ind_ini+3*cond:ind_ini-1+4*cond)=Vrini(1:cond,2)
 	Xvar(ind_ini+4*cond:ind_ini-1+5*cond)=Vrfin(1:cond,1)
 	Xvar(ind_ini+5*cond:ind_ini-1+6*cond)=Vrfin(1:cond,2)
-write(*,*) 'line 626'
+
 	ind_ini=ind_ini+6*cond
 
 !	DO i=1,cond
@@ -653,7 +653,7 @@ write(*,*) 'line 626'
 
 DEALLOCATE (h,Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4,Zc,Zci,STAT=ALLOC_ERR)
 !	DEALLOCATE (Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,STAT=ALLOC_ERR)
-write(*,*) 'line 656'
+
 
 	END SUBROUTINE
 !********************************************************************************************
