@@ -10,4 +10,5 @@ dos2unix vardimn
 make
 cp startup /vagrant/examples/YALUK
 cd /vagrant/examples/YALUK
-gdb --args /vagrant/libatp/tpbig BOTH test.atp s -r
+#gdb --args /vagrant/libatp/tpbig BOTH test.atp s -r
+time /vagrant/libatp/tpbig BOTH test.atp s -r

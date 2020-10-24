@@ -250,7 +250,7 @@
 	intold=integ
 	integ=0
 	gn1=gn
-	END DO 
+	END DO
 
 	IF (converge .EQ. 0) THEN
 	WRITE(*,*)'No convergencia de la integral',tol1/integ
@@ -275,7 +275,7 @@
 
 	x = ((cb+1) * jacob + xlow )
 
-!cDEC$ PARALLEL 	
+	!$OMP SIMD REDUCTION(+:int)	
 	DO i=1,gn
 		y(i) = FUN(x(i))
           integ=(cw(i)*y(i))*jacob
@@ -372,12 +372,12 @@
 
 	x = ((cb+1) * jacob + xlow )
 
-	DO 40, i=1,gn
+	!$OMP SIMD REDUCTION(+:int)
+	DO i=1,gn
 		y(i) = FUN(x(i),var1,var2)
           integ=(cw(i)*y(i))*jacob
 	    int = int + integ
-
-40	CONTINUE		
+	END DO
 	RETURN
 
 	END

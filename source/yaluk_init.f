@@ -1075,7 +1075,7 @@ SUBROUTINE LINEPARAM(cond,Xi,hm,rc,Lm,Cm,Zc)
 
 
 	DO 2, i=1,cond
-
+		
       DO 1, j=1,cond
 
             s=((hm(i)-hm(j))**2+(Xi(i)-Xi(j))**2)**.5 !computing the space between conductors
@@ -1147,28 +1147,17 @@ INTEGER, INTENT(OUT) :: conductividad, SIZE_2
 INTEGER :: i, ERRNUM
 DOUBLE PRECISION :: SIZE_2D
 LOGICAL, INTENT(OUT) :: triangular
-	  WRITE(*,*) 'Reading miscelaneo.txt'
       OPEN (UNIT = 8, FILE = 'miscelaneo.txt', STATUS = 'OLD', ERR=1008,IOSTAT=ERRNUM)
-      WRITE(*,*) 'v: ',v
 	  READ   (8, *) v
-	  WRITE(*,*) 'R v: ',v
 	  READ   (8, *) zlam
-	  WRITE(*,*) 'zlam: ',zlam
       READ   (8, *) Hcan
-	  WRITE(*,*) 'Hcan: ',Hcan
       READ   (8, *) tmax1
-	  WRITE(*,*) 'tmax1: ',tmax1, 'SIZE_2: ',SIZE_2
       READ   (8, *) SIZE_2
-	  WRITE(*,*) 'SIZE_2: ',SIZE_2
 	  !SIZE_2=int(SIZED)
       READ   (8, *) conductividad
-	  WRITE(*,*) 'Conductividad: ',Conductividad
       READ   (8, *) o
-	  WRITE(*,*) 'o: ',o
       READ   (8, *) e
-	  WRITE(*,*) 'e: ',e
 	  READ   (8, *) dx
-	  WRITE(*,*) 'dx: ',dx
 	  
 	  ! IF (.NOT. EOF(8)) THEN
 	  !		

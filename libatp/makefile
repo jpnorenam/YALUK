@@ -31,10 +31,10 @@ OBJECTS = dimdef.o \
 # ------------------------
 
 CFLAGS = -O2
-FFLAGS=-Ofast
+FFLAGS = -Ofast
 
 
-IMAGE=tpbig
+IMAGE = tpbig
 LIBRARY = tpbig.a dislin.a ../source/libyaluk.a
 
 .f.o:
@@ -42,7 +42,7 @@ LIBRARY = tpbig.a dislin.a ../source/libyaluk.a
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCFLAGS) $<
 $(IMAGE) : $(OBJECTS)
-	$(FOR) -o tpbig $(OBJECTS) $(LIBRARY)
+	$(FOR) -o tpbig $(OBJECTS) -fopenmp $(LIBRARY)
 #
 # make available the following objects:
 #

@@ -11,3 +11,9 @@ build/
 tmp/
 MingW/
 libubuntu64_old/
+
+# ATP and Yaluk results
+*.pl4
+*.lis
+*.dat
+*.ylk

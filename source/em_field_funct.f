@@ -122,8 +122,6 @@
 !Cm	FIRST INTEGRATION WINDOW
 !*	----------------------------------------------
 
-!$OMP PARALLEL  
-!$OMP DO
 
 !10 - start of cycle of EM calculation
 	DO i = 1,SIZE_1  !10
@@ -209,9 +207,6 @@
 								  
         EZ2(1,1) =EZ(SIZE_1,1)
 	END DO 
-
-!$OMP END DO  nowait
-!$OMP END PARALLEL
 
 !finishing do 10
 
@@ -388,6 +383,7 @@
 !*	********************************************************			*
 
 	DOUBLE PRECISION FUNCTION EZP(z)
+	!$OMP DECLARE SIMD (EZP)
 	IMPLICIT NONE
 	COMMON /POINT/ r, h
 	COMMON /TIME/ t
@@ -430,6 +426,7 @@
 !*	**************************************								*
 
 	DOUBLE PRECISION FUNCTION EELZP(z,Icorr,tcorr)
+	!$OMP DECLARE SIMD (EELZP)
 	IMPLICIT NONE
 
 	INTEGER nmaxi1,indi,inds
@@ -499,6 +496,7 @@
 !*	*******************************************							*
 
 	DOUBLE PRECISION FUNCTION BINDP(z)
+	!$OMP DECLARE SIMD (BINDP)
 	IMPLICIT NONE
 	COMMON /POINT/ r, h
 	COMMON /TIME/ t
@@ -537,6 +535,7 @@
 !*	********************************************************			*
 
 	DOUBLE PRECISION FUNCTION ERP(z)
+	!$OMP DECLARE SIMD (ERP)
 	IMPLICIT NONE
 	COMMON /POINT/ r, h
 	COMMON /TIME/ t
@@ -579,6 +578,7 @@
 !*	************************************************					*
 
 	DOUBLE PRECISION FUNCTION EELRP(z,Icorr,tcorr)
+	!$OMP DECLARE SIMD (EELRP)
 	IMPLICIT NONE
 	COMMON /POINT/ r, h
 	COMMON /TIME/ t
@@ -596,7 +596,7 @@
      
 	
 
-     	Rz = DSQRT(r*r + (z - h)**2)
+    Rz = DSQRT(r*r + (z - h)**2)
 	A = t - (Rz/c + ABS(z)/v)
 
 	IF (A .LE. 0) THEN
