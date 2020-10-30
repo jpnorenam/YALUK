@@ -479,19 +479,13 @@ tmax1=1.8*(tao11**n1*tao21*n1)**(1/(1+n1))
 t_second=10.e-6 !maximum time for calculation on the farthest line
 dt3=.5e-6           !discretization time for improving matrix size
 		ENDSELECT 
- write(*,*) 'Line 482 pass'  
+ 
 scale_factor=real(nint(dt3/dt))
-write(*,*) 'Scale Factor: ',scale_factor  
 dt3=dt*scale_factor      
-write(*,*) 'dt3: ',dt3
 SIZE_T = nint(tmax / dt)
-write(*,*) 'SIZE_T: ',SIZE_T		!number of time division for the whole window 
-write(*,*) 'SIZE_1: ',SIZE_1
 SIZE_1= nint(tmax1/dt)
-write(*,*) 'SIZE_1: ',SIZE_1			!number of time division for first window
 !***********************************************************
 ! including new size elements for reducing matrix dimension
- write(*,*) 'Line 489 pass' !-----------------------------------------------------------
 SIZE_ini=SIZE_1+nint((t0_max+t_second)/dt)
 IF (SIZE_T.LE.SIZE_ini-nint(dt3/dt)) THEN
     SIZE_ini=SIZE_T-1
@@ -499,16 +493,13 @@ IF (SIZE_T.LE.SIZE_ini-nint(dt3/dt)) THEN
 ELSE
     SIZE3=nint((tmax-real(SIZE_ini)*dt)/dt3)
 ENDIF
-write(*,*) 'Line 497pass'
 SIZE_T2=SIZE_ini+SIZE3
 !***********************************************************
 dti=.05D-8
 dti1=dti
 nmaxi1=nint(dt*SIZE_1/dti)
 dt2= (tmax-tmax1)/SIZE_2 !time step for second window
- write(*,*) 'Line 504 pass' 
 SIZE_2=SIZE_2+1			!number of time division for first window
- write(*,*) 'Line 505 pass' 
 a=ATAN2((YA0-YB0),(XA0-XB0))
 XA=(XA0-X0)*cos(a)+(YA0-Y0)*sin(a)
 XB=(XB0-X0)*cos(a)+(YB0-Y0)*sin(a)

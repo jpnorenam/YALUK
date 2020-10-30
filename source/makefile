@@ -11,8 +11,8 @@ AR = ar
 # OBJECTS is a customized list of modules that are being worked on
 # and are present in the current directory
 
-OBJECTS = yaluk_exec.o \
-	   		 	yaluk_init.o \
+OBJECTS = yaluk_exec2.o \
+	   		 	yaluk_init2.o \
 		   		em_field_funct.o \
 		   		basic_functions.o
 
