@@ -26,7 +26,9 @@
 !*		Xvar(7):t0												*
 !*		Xvar(8)=dx2												*
 !*      Xvar(9)=nlin	!numero total de líneas					*
-!*      Xvar(10):  numero máximo divisiones						*
+!*      Xvar(10):maximum number of division in x				*
+!*      Xvar(11):maximum number of conductors                   *
+!*      Xvar(12): status_perfil (1 .True. 0 .False.)						*
 !*      Xvar(20)=ind_ini1 !initial variable for saving h values
 !*		Xin(1):  t    (Tiempo de Execución)                     *
 !*		Xin(2):  Vrini(1)										*
@@ -37,8 +39,6 @@
 !*		Xin(7):  Vrfin(3)										*
 !*		Xin(8):  Vrini(4)										*
 !*		Xin(9):  Vrfin(4)										*
-!*      Xvar(10):maximum number of division in x				*
-!*      Xvar(11):maximum number of conductors                   *
 !*		Xout(1): V1ini(1)                                       *
 !*		Xout(2): V1fin(1)										*
 !*		Xout(3): V1ini(2)                                       *
@@ -53,14 +53,12 @@ SUBROUTINE yaluk_exec(xdata,xin,xout,xvar)
 
 !use, intrinsic:: iso_fortran_env, only: stdin=>input_unit
 !USE IFPORT
-!USE DFLIB !visual fortran 6.0
-	INTEGER SIZE, k,g,n,cond,  kmax, 					&
-     conductividad,ALLOC_ERR,ERRNUM,cond_s,kmaxt,max_lin,num_lin,cond_max,       &
-     ind_ini,ind_ini1,i,ind_f,SIZE_2,SIZE3,SIZE_ini              !Data used for interpolation
+
+	INTEGER SIZE, k,g,n,cond,  kmax,ind_ini,ind_ini1,i,p_kmax, 					&
+     conductividad,ALLOC_ERR,ALLOC_ERR1,ERRNUM,cond_s,kmaxt,max_lin,num_lin,cond_max
 	DOUBLE PRECISION xin(*), xout(*), xvar(*),xdata(*)
-	DOUBLE PRECISION dt, tmax,c,t,o,e,ti,pi,n_VR, 	&
-         mu,e0,taog,F,ferrc,valmin,Fe,EE,dx2,dx,dt_s,tmax_s,t0,t0_min,           &
-         Evn_ini(2),Evn_fin(2),ind,ind2,ind3,ind4,dt3                    !data for making interpolation
+	DOUBLE PRECISION dt, tmax,c,t,o,e,pi,n_VR, 	&
+         mu,e0,taog,F,ferrc,valmin,Fe,EE,dx2,dx,dt_s,tmax_s,t0,t0_min
 !	INTEGER(2) ihr, imin, isec, i100th,ihr2, imin2, isec2, i100th2	!variables de tiempo
 !     DOUBLE PRECISION, ALLOCATABLE :: h(:),Xi(:),					&
 !		Ci(:,:),Li(:,:),LCi(:,:),D3i(:,:),D5(:,:),					&
@@ -71,17 +69,20 @@ SUBROUTINE yaluk_exec(xdata,xin,xout,xvar)
 !		Vi(:,:),Ii(:,:),Vrini(:,:),Vrfin(:,:),V1ini(:),V1fin(:)
 
 DOUBLE PRECISION, SAVE, ALLOCATABLE :: h(:),					&
-		D3ic(:,:,:),D5c(:,:,:),					& !matrices constantes para cada línea
+		D3ic(:,:,:,:),D5c(:,:,:,:),					& !matrices constantes para cada línea
 		Evini(:,:),Evfin(:,:),Ex(:,:,:,:),		&
-		Zc_t(:,:,:),Zci_t(:,:,:),& !Surge impedance for all lines
+		Zc_t(:,:,:,:),Zci_t(:,:,:,:),& !Surge impedance for all lines
 		dI(:,:,:,:),Vp(:,:,:),Vpa(:,:,:),	&
 		VR(:,:,:),Vant(:,:,:),Iant(:,:,:), &
-		Mi1c(:,:,:),Mi2c(:,:,:),Mi3c(:,:,:),Mi4c(:,:,:),Mv1c(:,:,:),Mv2c(:,:,:),Mv3c(:,:,:) !Matrices multiplican tensiones y corrientes para cada linea
+		Mi1c(:,:,:,:),Mi2c(:,:,:,:),Mi3c(:,:,:,:),Mi4c(:,:,:,:),Mv1c(:,:,:,:),Mv2c(:,:,:,:),Mv3c(:,:,:,:) !Matrices multiplican tensiones y corrientes para cada linea
 DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
-		Exn(:,:),Exn_1(:,:),Exn_2(:,:),Exn_1p(:,:),&
 		A3(:,:),A4(:,:),B1(:,:),B2(:,:),B3(:,:),B4(:,:),B5(:,:),B6(:,:),A1(:,:),A2(:,:),A5(:,:),A6(:,:),Vrini(:,:),Vrfin(:,:),V1ini(:),V1fin(:),&
-		B7(:,:),Vi(:,:),Ii(:,:),dI_p(:,:),Mi1(:,:),Mi2(:,:),Mi3(:,:),Mi4(:,:),Mv1(:,:),Mv2(:,:),Mv3(:,:),D3i(:,:),D5(:,:),Zc(:,:),Zci(:,:)
+		B7(:,:),Vi(:,:),Ii(:,:),dI_p(:,:),Mi1(:,:),Mi2(:,:),Mi3(:,:),Mi4(:,:),Mv1(:,:),Mv2(:,:),Mv3(:,:),D3i_i(:,:),D3i_f(:,:),&
+		D5_i(:,:),Zc_i(:,:),Zci_i(:,:),D5_f(:,:),Zc_f(:,:),Zci_f(:,:)
+DOUBLE PRECISION, ALLOCATABLE :: Mi1_o(:,:,:),Mi2_o(:,:,:),Mi3_o(:,:,:),Mi4_o(:,:,:),Mv1_o(:,:,:),Mv2_o(:,:,:),Mv3_o(:,:,:),&
+        D3i_o(:,:,:),D5_o(:,:,:),Zc_o(:,:,:),Zci_o(:,:,:) !Matrices multiplican tensiones y corrientes para cada linea
 
+LOGICAL(4) status_perfil,imprimir_inf
 
 	CHARACTER(LEN=3) indarchiv
 	CHARACTER (LEN=5) ncase_s
@@ -107,10 +108,13 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 	conductividad=Xvar(6)
 	t0=Xvar(7)
 	dx2=Xvar(8)	
-	SIZE_2=nint(Xvar(12)) !reading size for matrix reduced
-    SIZE3=nint(Xvar(13)) !matrix size without interpolation
-    SIZE_ini=nint(Xvar(15))
-    dt3=Xvar(14)
+    IF(Xvar(12).EQ.1) THEN
+        status_perfil=.TRUE.
+        p_kmax=kmax
+    ELSE
+        status_perfil=.FALSE.
+        p_kmax=1
+    ENDIF
 	!Loading Data from the ATP - case
 	dt=Xdata(1)             !delta time
 	tmax=Xdata(2)           !maximum simulation time
@@ -135,39 +139,42 @@ DOUBLE PRECISION, ALLOCATABLE :: Evini2(:),Evfin2(:),Ex2(:,:,:),&
 	WRITE(indarchiv,FMT=100) int(Xdata(4)) !writing line number to string
 
     IF (.NOT. ALLOCATED(EX)) THEN
-	ALLOCATE (D3ic(cond_max,cond_max,max_lin),D5c(cond_max,cond_max,max_lin),Zc_t(cond_max,cond_max,max_lin),Zci_t(cond_max,cond_max,max_lin),	&				
-		STAT=ALLOC_ERR)
-		!write(*,*) 'Err ',ALLOC_ERR
+	ALLOCATE (D3ic(cond_max,cond_max,max_lin,2),D5c(cond_max,cond_max,max_lin,2),Zc_t(cond_max,cond_max,max_lin,2),Zci_t(cond_max,cond_max,max_lin,2),	&				
+		STAT=ALLOC_ERR1)
 		ALLOC_ERR=0
-	ALLOCATE	(Ex(cond_max,kmaxt,SIZE_2+2,max_lin),Evini(SIZE_2+2,max_lin),Evfin(SIZE_2+2,max_lin),				&				
+	ALLOCATE	(Ex(cond_max,kmaxt,SIZE+2,max_lin),Evini(SIZE+2,max_lin),Evfin(SIZE+2,max_lin),				&				
 		dI(SIZE+2,cond_max,kmaxt,max_lin),	&
 		VR(cond_max,SIZE+2,max_lin),Vant(cond_max,1:kmaxt,max_lin),Iant(cond_max,1:kmaxt,max_lin),&
-		Mi1c(cond_max,cond_max,max_lin),Mi2c(cond_max,cond_max,max_lin),Mi3c(cond_max,cond_max,max_lin),Mi4c(cond_max,cond_max,max_lin),Mv1c(cond_max,cond_max,max_lin),Mv2c(cond_max,cond_max,max_lin),Mv3c(cond_max,cond_max,max_lin),&
+		Mi1c(cond_max,cond_max,max_lin,p_kmax),Mi2c(cond_max,cond_max,max_lin,p_kmax),Mi3c(cond_max,cond_max,max_lin,p_kmax),&
+		Mi4c(cond_max,cond_max,max_lin,p_kmax),Mv1c(cond_max,cond_max,max_lin,p_kmax),Mv2c(cond_max,cond_max,max_lin,p_kmax),&
+		Mv3c(cond_max,cond_max,max_lin,p_kmax),&
 		Vpa(cond_max,kmaxt,max_lin),Vp(cond_max,kmaxt,max_lin),STAT=ALLOC_ERR)
 
-        if (ALLOC_ERR .EQ. 179) THEN 
-		    print *, 'error en allocate - overflow array'
+        if (ALLOC_ERR .EQ. 179 .OR. ALLOC_ERR1.EQ. 179) THEN 
+		    write(*,*) '*INF* num_lin ',num_lin,' time=',t,'ALLOC_ERR and 1',ALLOC_ERR,ALLOC_ERR1
+            write(*,*) '*INF* cond_max',cond_max,' max_lin',max_lin,' SIZE',SIZE,'kmaxt',kmaxt,'t',t,'n',n
+		    
+		    pause '*ERROR* Allocating - overflow array'
+		    STOP
 		ENDIF
-		
+
     ENDIF
 		!Evini2,Evfin2,Ex2,D3i,D5,h,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 		
 		ALLOC_ERR=0
-	ALLOCATE (h(cond),Ex2(cond,kmax+1,SIZE_2+2),Evini2(SIZE_2+2),Evfin2(SIZE_2+2),  &
-		Exn(cond,kmax+1),Exn_1(cond,kmax+1),Exn_2(cond,kmax+1),Exn_1p(cond,kmax+1),& !matrix for replacing and interpolation
+	ALLOCATE (h(cond),Ex2(cond,kmax+1,SIZE+2),Evini2(SIZE+2),Evfin2(SIZE+2),&
 		A1(cond,1),A2(cond,1),A5(cond,1),A6(cond,1),&
      	A3(cond,1),A4(cond,1),B1(cond,1),B2(cond,1),B3(cond,1),Vi(cond,kmax+1),Ii(cond,kmax+1),								&
      	B4(cond,1),B5(cond,1),B6(cond,1),B7(cond,1),dI_p(SIZE+2,cond),&
 		Mv1(cond,cond),Mv2(cond,cond),Mv3(cond,cond),Mi1(cond,cond),Mi2(cond,cond),Mi3(cond,cond),Mi4(cond,cond),&
-		D3i(cond,cond),D5(cond,cond),Zc(cond,cond),Zci(cond,cond),&
+		D3i_i(cond,cond),D3i_f(cond,cond),D5_i(cond,cond),D5_f(cond,cond),Zc_i(cond,cond),Zc_f(cond,cond),Zci_i(cond,cond),Zci_f(cond,cond),&
 		Vrini(cond,2),V1ini(cond),Vrfin(cond,2),V1fin(cond),& !tensiones que pasan de linea valor actual, valor pasado
 		STAT=ALLOC_ERR)
 		
 		if (ALLOC_ERR .GT. 0) THEN 
-		    print *, 'error en allocate - presione una tecla para continuar'
-			!read(stdin,*)
+		    pause '*ERROR* Allocating - press any key to continue'
+            STOP
 		ENDIF
-
 
 ! CARGANDO CAMPOS
 !CALL GETTIM (ihr, imin, isec, i100th)
@@ -212,33 +219,70 @@ ENDIF
 
 
 IF (n .LE. 1) THEN
+!Solo almacenando datos para el primer paso	
+		ALLOCATE	(Mi1_o(cond,cond,p_kmax),Mi2_o(cond,cond,p_kmax),Mi3_o(cond,cond,p_kmax),&
+		Mi4_o(cond,cond,p_kmax),Mv1_o(cond,cond,p_kmax),Mv2_o(cond,cond,p_kmax),Mv3_o(cond,cond,p_kmax),&
+		D3i_o(cond,cond,2),D5_o(cond,cond,2),Zc_o(cond,cond,2),Zci_o(cond,cond,2),STAT=ALLOC_ERR)
+  
+ 
+            
 	OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM)
-	READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min
-	
+	READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min,kmaxt,cond_max,imprimir_inf
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+			write(*,*)'*INF* Initializing execution subroutine n=',n !Information
+			write(*,*)'*INF* Line nunmber: ',num_lin
+	ENDIF		
 	CLOSE (UNIT=11)
 1011 SELECT CASE(ERRNUM>0)
 	    CASE (.TRUE.)
-			write(*,*) 'error leyendo status_file.ylk',ERRNUM
+			write(*,*) '*ERROR* Reading status_file.ylk',ERRNUM
 		ENDSELECT 
 
 	OPEN(UNIT = 12, FILE = ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1004,IOSTAT=ERRNUM)
-	READ(12) Evini2,Evfin2,Ex2,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
+!	DIMEN2=SHAPE(Evini2)
+!	write(*,*) 'Evini2',DIMEN2
+!	DIMEN2=SHAPE(Evfin2)
+!	write(*,*) 'Evini2',DIMEN2
+!	DIMEN=SHAPE(Ex2)
+!	write(*,*) 'Ex2',DIMEN
+
+	READ(12) Evini2,Evfin2,Ex2,D3i_o,D5_o,Zc_o,Zci_o,Mv1_o,Mv2_o,Mv3_o,Mi1_o,Mi2_o,Mi3_o,Mi4_o
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+			write(*,*)'*INF* Reading calculated data from ='//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat' !Information
+	ENDIF		
+
+!---------------------------------------------------
+! Para el perfil es necesario cambiar el Mv1 con 3 dimensiones, el de dos dimensiones se usa exclusivamente para parámetros constantes en la línea
+!---------------------------------------------------
 	
-	Mv1c(1:cond,1:cond,num_lin)=Mv1(1:cond,1:cond)
-	Mv2c(1:cond,1:cond,num_lin)=Mv2(1:cond,1:cond)
-	Mv3c(1:cond,1:cond,num_lin)=Mv3(1:cond,1:cond)
-	Mi1c(1:cond,1:cond,num_lin)=Mi1(1:cond,1:cond)
-	Mi2c(1:cond,1:cond,num_lin)=Mi2(1:cond,1:cond)
-	Mi3c(1:cond,1:cond,num_lin)=Mi3(1:cond,1:cond)
-	Mi4c(1:cond,1:cond,num_lin)=Mi4(1:cond,1:cond)
-	D3ic(1:cond,1:cond,num_lin)=D3i(1:cond,1:cond)
-	D5c(1:cond,1:cond,num_lin)=D5(1:cond,1:cond)
-	Zc_t(1:cond,1:cond,num_lin)=Zc(1:cond,1:cond)
-	Zci_t(1:cond,1:cond,num_lin)=Zci(1:cond,1:cond)
+!	Mv1c(1:cond,1:cond,num_lin)=Mv1(1:cond,1:cond)
+!	Mv2c(1:cond,1:cond,num_lin)=Mv2(1:cond,1:cond)
+!	Mv3c(1:cond,1:cond,num_lin)=Mv3(1:cond,1:cond)
+!	Mi1c(1:cond,1:cond,num_lin)=Mi1(1:cond,1:cond)
+!	Mi2c(1:cond,1:cond,num_lin)=Mi2(1:cond,1:cond)
+!	Mi3c(1:cond,1:cond,num_lin)=Mi3(1:cond,1:cond)
+!	Mi4c(1:cond,1:cond,num_lin)=Mi4(1:cond,1:cond)
+!	D3ic(1:cond,1:cond,num_lin)=D3i(1:cond,1:cond)
+!	D5c(1:cond,1:cond,num_lin)=D5(1:cond,1:cond)
+!	Zc_t(1:cond,1:cond,num_lin)=Zc(1:cond,1:cond)
+!	Zci_t(1:cond,1:cond,num_lin)=Zci(1:cond,1:cond)
+	
+	Mv1c(1:cond,1:cond,num_lin,:)=Mv1_o(1:cond,1:cond,:)
+	Mv2c(1:cond,1:cond,num_lin,:)=Mv2_o(1:cond,1:cond,:)
+	Mv3c(1:cond,1:cond,num_lin,:)=Mv3_o(1:cond,1:cond,:)
+	Mi1c(1:cond,1:cond,num_lin,:)=Mi1_o(1:cond,1:cond,:)
+	Mi2c(1:cond,1:cond,num_lin,:)=Mi2_o(1:cond,1:cond,:)
+	Mi3c(1:cond,1:cond,num_lin,:)=Mi3_o(1:cond,1:cond,:)
+	Mi4c(1:cond,1:cond,num_lin,:)=Mi4_o(1:cond,1:cond,:)
+	D3ic(1:cond,1:cond,num_lin,:)=D3i_o(1:cond,1:cond,:)
+	D5c(1:cond,1:cond,num_lin,:)=D5_o(1:cond,1:cond,1:2)
+	Zc_t(1:cond,1:cond,num_lin,:)=Zc_o(1:cond,1:cond,1:2)
+	Zci_t(1:cond,1:cond,num_lin,:)=Zci_o(1:cond,1:cond,1:2)
+	
 	close(12)
-	Ex(1:cond,1:kmax+1,1:SIZE_2+2,num_lin)=Ex2(1:cond,1:kmax+1,1:SIZE_2+2)
-	Evini(1:SIZE_2+2,num_lin)=Evini2(1:SIZE_2+2)
-	Evfin(1:SIZE_2+2,num_lin)=Evfin2(1:SIZE_2+2)
+	Ex(1:cond,1:kmax+1,1:SIZE+2,num_lin)=Ex2(1:cond,1:kmax+1,1:SIZE+2)
+	Evini(1:SIZE+2,num_lin)=Evini2(1:SIZE+2)
+	Evfin(1:SIZE+2,num_lin)=Evfin2(1:SIZE+2)
 
 
 1004 SELECT CASE(ERRNUM>0)
@@ -254,73 +298,15 @@ ENDIF
 
 !IF (t .GE. t0-dt) THEN 
 IF (t .GE. t0) THEN
+	n_VR=1
+
 !write(*,*) 'Mi4=',Mi4
 !**********************************************************************
 !	Loading Init Values and Casename
 !----------------------------------------------------------------------
-
-
-!	OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM)
-!	READ (UNIT=11) dt_s,tmax_s,cond_s,ncase_s,casename
-!	CLOSE (UNIT=11)
-
-!1011 SELECT CASE(ERRNUM>0)
-!	    CASE (.TRUE.)
-!			write(*,*) 'error leyendo status_file.ylk',ERRNUM
-!		ENDSELECT 
-!ERRNUM=0
-!	OPEN(UNIT = 12, FILE = ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1004,IOSTAT=ERRNUM)
-!	READ(12) Evini,Evfin,Ex,Li,Ci,LCi,D3i,D5,h,Zc,Zci
-!	close(12)
-!1004 SELECT CASE(ERRNUM>0)
-!	    CASE (.TRUE.)
-!			write(*,*) 'error leyendo yalukp.dat  ',ERRNUM
-!			stop
-!		ENDSELECT 
-
-!IF (n.GE.2) THEN
-!	open(UNIT = 15, FILE = 'ten-corr_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1006,IOSTAT=ERRNUM)
-!	read(15) dI,Vant,Iant,Vp,Vpa,VR !,Vant,Iant,Vi,Ii,Vrfin,Vrini,V1ini,V1fin,Vp,VR
-!	close(15)
-!ELSE
-!	open(UNIT = 15, FILE = 'ten-corr_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1006,IOSTAT=ERRNUM)
-!	write(15) Vant,Iant,Vi,Ii,Vrfin,Vrini,V1ini,V1fin,Vp,VR,dI
-!	close(15)
-!END IF
-!	IF (n_VR .EQ. 0) THEN
-!	open(UNIT = 18, FILE = 'temp_VR_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1018,IOSTAT=ERRNUM)
-!	write(UNIT = 18) VR !Vant,Iant,Vi,Ii,Vrfin,Vrini,V1ini,V1fin,Vp,VR
-!	close (UNIT = 18)
-	n_VR=1
-!1018 SELECT CASE(ERRNUM>0)
-!			CASE (.TRUE.)
-!			write(*,*) 'Error saving leyendo ten-corr_'//indarchiv//'.dat  ',ERRNUM
-!			stop
-!	ENDSELECT
-!			ERRNUM=0 
-!	ENDIF
-
-
-
-!1006 SELECT CASE(ERRNUM>0)
-!	    CASE (.TRUE.)
-!			write(*,*) 'error leyendo ten-corr.dat  ',ERRNUM
-!		ENDSELECT 
-
-
 	ind_ini=ind_ini1+cond
 
-!	write(*,*)'LCi',LCi
-!	write(*,*)'LCi2',Xvar(ind_ini +5*cond*cond:ind_ini-1+6*cond*cond)
 
-!	DO i=1,cond
-!		D3i(i,:) =Xvar(ind_ini             +(i-1)*cond:ind_ini-1            +i*cond)
-!		D5(i,:)  =Xvar(ind_ini +  cond*cond+(i-1)*cond:ind_ini-1+  cond*cond+i*cond)
-!		Zc(i,:)  =Xvar(ind_ini +2*cond*cond+(i-1)*cond:ind_ini-1+2*cond*cond+i*cond)
-!		Li(i,:)  =Xvar(ind_ini +3*cond*cond+(i-1)*cond:ind_ini-1+3*cond*cond+i*cond)
-!		Ci(i,:)  =Xvar(ind_ini +4*cond*cond+(i-1)*cond:ind_ini-1+4*cond*cond+i*cond)
-!		LCi(i,:) =Xvar(ind_ini +5*cond*cond+(i-1)*cond:ind_ini-1+5*cond*cond+i*cond)
-!	ENDDO
 	ind_ini=ind_ini+6*cond*cond
 	
 !**********************************************************************
@@ -356,67 +342,61 @@ IF (t .GE. t0) THEN
 
 !*******************************************************************************************	
 !*******************************************************************************************	
-	ti=0.D0
 !Cm	Ii=0
 !Cm	Vi=0
 !Cm	Vp=0
 !Cm	dI=0
-	Mv1(1:cond,1:cond)=Mv1c(1:cond,1:cond,num_lin)
-	Mv2(1:cond,1:cond)=Mv2c(1:cond,1:cond,num_lin)
-	Mv3(1:cond,1:cond)=Mv3c(1:cond,1:cond,num_lin)
-	Mi1(1:cond,1:cond)=Mi1c(1:cond,1:cond,num_lin)
-	Mi2(1:cond,1:cond)=Mi2c(1:cond,1:cond,num_lin)
-	Mi3(1:cond,1:cond)=Mi3c(1:cond,1:cond,num_lin)
-	Mi4(1:cond,1:cond)=Mi4c(1:cond,1:cond,num_lin)
-	D3i(1:cond,1:cond)=D3ic(1:cond,1:cond,num_lin)
-	D5(1:cond,1:cond)=D5c(1:cond,1:cond,num_lin)  
-	Zc(1:cond,1:cond)=Zc_t(1:cond,1:cond,num_lin)  
-	Zci(1:cond,1:cond)=Zci_t(1:cond,1:cond,num_lin)  
 
-    !*************************************************
-    !INTERPOLATION PROCESS
-    !-------------------------------------------------
-    !  Exn :Exn for time n  for all space divisions
-    !  Exn :Exn_1 for time n-1 for all space divisions
-    !  Exn :Exn_2 for time n-2 for all space divisions
-    !  Exn :Exn_1p for time n+1 for all space divisions
-    !  Evn_ini(1) for time n
-    !  Evn_ini(2) for time n+1
-    !  Evn_fin(1) for time n
-    !  Evn_fin(2) for time n+1
-    !**********************************************************
-        IF (n.GT.SIZE3) THEN
-            ind=(n-SIZE3)*dt/dt3
-            ind2=(n-1-SIZE3)*dt/dt3
-            ind3=(n-2-SIZE3)*dt/dt3
-            ind4=(n+1-SIZE3)*dt/dt3
-            if (n.GT.SIZE-dt3/dt-1) THEN
-                ind=(n-SIZE3)*dt/dt3-2
-            endif
-                ind_f=floor(ind)
+!-----------------------------------------------------------
+!***********************************************************
+! EN ESTE PUNTO SE UTILIZA EL PRIMER VALOR DE CÁLCULO DE MV1 PARA PARÁMETROS CONSTANTES
+!***********************************************************
+!-----------------------------------------------------------
+	Mv1(1:cond,1:cond)=Mv1c(1:cond,1:cond,num_lin,1)
+	Mv2(1:cond,1:cond)=Mv2c(1:cond,1:cond,num_lin,1)
+	Mv3(1:cond,1:cond)=Mv3c(1:cond,1:cond,num_lin,1)
+	Mi1(1:cond,1:cond)=Mi1c(1:cond,1:cond,num_lin,1)
+	Mi2(1:cond,1:cond)=Mi2c(1:cond,1:cond,num_lin,1)
+	Mi3(1:cond,1:cond)=Mi3c(1:cond,1:cond,num_lin,1)
+	Mi4(1:cond,1:cond)=Mi4c(1:cond,1:cond,num_lin,1)
+	! D5, Zc y Zci varian al inicio y al final dependiendo de los parámetros a lo largo de la línea
 
-            Exn(1:cond,1:kmax+1) =  Ex(1:cond,1:kmax+1,SIZE3+ind_f,num_lin)+(Ex(1:cond,1:kmax+1,SIZE3+ind_f+1,num_lin)-Ex(1:cond,1:kmax+1,SIZE3+ind_f,num_lin))*(ind-ind_f)
-            Exn_1(1:cond,1:kmax+1) = Exn-(Ex(1:cond,1:kmax+1,SIZE3+ind_f+1,num_lin)-Ex(1:cond,1:kmax+1,SIZE3+ind_f,num_lin))*(ind2-ind_f)
-            Exn_2(1:cond,1:kmax+1) = Exn-(Ex(1:cond,1:kmax+1,SIZE3+ind_f+1,num_lin)-Ex(1:cond,1:kmax+1,SIZE3+ind_f,num_lin))*(ind3-ind_f)
-            Exn_1p(1:cond,1:kmax+1) = Exn+(Ex(1:cond,1:kmax+1,SIZE3+ind_f+1,num_lin)-Ex(1:cond,1:kmax+1,SIZE3+ind_f,num_lin))*(ind4-ind_f)
+	Zc_i(1:cond,1:cond)=Zc_t(1:cond,1:cond,num_lin,1)
+	Zci_i(1:cond,1:cond)=Zci_t(1:cond,1:cond,num_lin,1)
+	D3i_i(1:cond,1:cond)=D3ic(1:cond,1:cond,num_lin,1)
+	D5_i(1:cond,1:cond)=D5c(1:cond,1:cond,num_lin,1)
+	
+	Zc_f(1:cond,1:cond)=Zc_t(1:cond,1:cond,num_lin,2)
+	Zci_f(1:cond,1:cond)=Zci_t(1:cond,1:cond,num_lin,2)
+	D5_f(1:cond,1:cond)=D5c(1:cond,1:cond,num_lin,2)
+	D3i_f(1:cond,1:cond)=D3ic(1:cond,1:cond,num_lin,2)
 
-            Evn_ini(1) = Evini(SIZE3+ind_f,num_lin)+(Evini(SIZE3+ind_f+1,num_lin)-Evini(SIZE3+ind_f,num_lin))*(ind-ind_f)
-            Evn_ini(2) = Evini(SIZE3+ind_f,num_lin)+(Evini(SIZE3+ind_f+1,num_lin)-Evini(SIZE3+ind_f,num_lin))*(ind4-ind_f)
-            Evn_fin(1) = Evfin(SIZE3+ind_f,num_lin)+(Evfin(SIZE3+ind_f+1,num_lin)-Evfin(SIZE3+ind_f,num_lin))*(ind-ind_f)
-            Evn_fin(2) = Evfin(SIZE3+ind_f,num_lin)+(Evfin(SIZE3+ind_f+1,num_lin)-Evfin(SIZE3+ind_f,num_lin))*(ind4-ind_f)
-         ELSE
-            Exn(1:cond,1:kmax+1)=  Ex(1:cond,1:kmax+1,n,num_lin)
-            Exn_1(1:cond,1:kmax+1) =  Ex(1:cond,1:kmax+1,n-1,num_lin)
-            Exn_2(1:cond,1:kmax+1) =  Ex(1:cond,1:kmax+1,n-2,num_lin)
-            Exn_1p(1:cond,1:kmax+1) =  Ex(1:cond,1:kmax+1,n+1,num_lin)
-            Evn_ini = Evini(n:n+1,num_lin)
-            Evn_fin = Evfin(n:n+1,num_lin)
-        ENDIF
-    !--------------------------------------------------
-    ! ENDING INTERPOLATION
-    !***************************************************
-
+!***********************************************************
+!-----------------------------------------------------------
+ 
 	DO 11,k=3,(kmax-1)
+
+!*******************************************+
+!* CONSIDERING CHANGING LC PARAMETERS ALONG THE LINE
+!*********************************************+
+
+IF (status_perfil.EQV. .TRUE.) THEN
+    !-----------------------------------------------------------
+    !***********************************************************
+    ! SE CAMBIA EL VALOR DE MVs Y MIs PARA CADA DX, CUANDO EXISTE VARIACIÓN DE PARAM
+    !***********************************************************
+    !-----------------------------------------------------------
+
+	Mv1(1:cond,1:cond)=Mv1c(1:cond,1:cond,num_lin,k)
+	Mv2(1:cond,1:cond)=Mv2c(1:cond,1:cond,num_lin,k)
+	Mv3(1:cond,1:cond)=Mv3c(1:cond,1:cond,num_lin,k)
+	Mi1(1:cond,1:cond)=Mi1c(1:cond,1:cond,num_lin,k)
+	Mi2(1:cond,1:cond)=Mi2c(1:cond,1:cond,num_lin,k)
+	Mi3(1:cond,1:cond)=Mi3c(1:cond,1:cond,num_lin,k)
+	Mi4(1:cond,1:cond)=Mi4c(1:cond,1:cond,num_lin,k)
+
+ENDIF
+
 
 !		A1(:,1)=-dt*(Iant(:,k+1,num_lin)-Iant(:,k-1,num_lin))/(dx+dx)
 !		A2(:,1)=0.5*dt*dt*(-((Ex(:,k+1,n-1,num_lin)-Ex(:,k-1,n-1,num_lin))/(dx+dx)			&
@@ -430,20 +410,23 @@ IF (t .GE. t0) THEN
  !    		   Ex(:,k,n-1,num_lin)+Vp(:,k,num_lin)+(Vp(:,k,num_lin)-Vpa(:,k,num_lin))/2-(Ex(:,k,n,num_lin))*.25)
 !		END IF
 !		B2(:,1)=0.5*(dt*dt)*((Iant(:,k+1,num_lin)+Iant(:,k-1,num_lin)-2*Iant(:,k,num_lin))/(dx*dx))
- 	    A1(1:cond,1)=-(Iant(1:cond,k+1,num_lin)-Iant(1:cond,k-1,num_lin))
-		A2(1:cond,1)=(-((Exn_1(1:cond,k+1)-Exn_1(1:cond,k-1))			&
+
+
+	    A1(1:cond,1)=-(Iant(1:cond,k+1,num_lin)-Iant(1:cond,k-1,num_lin))
+		A2(1:cond,1)=(-((Ex(1:cond,k+1,n-1,num_lin)-Ex(1:cond,k-1,n-1,num_lin))			&
      			-2*(Vant(1:cond,k+1,num_lin)+Vant(1:cond,k-1,num_lin)-2*Vant(1:cond,k,num_lin))/(dx))+		&
      			(Vp(1:cond,k+1,num_lin)-Vp(1:cond,k-1,num_lin)))
 		if (n .GT. 2) THEN
 		B1(1:cond,1)=-((Vant(1:cond,k+1,num_lin)-Vant(1:cond,k-1,num_lin))/(dx+dx)-				&
-     		   Exn_1(1:cond,k)+Vp(1:cond,k,num_lin)+(Vp(1:cond,k,num_lin)-Vpa(1:cond,k,num_lin))*.5-(Exn(1:cond,k)-Exn_2(1:cond,k))*.25)
+     		   Ex(1:cond,k,n-1,num_lin)+Vp(1:cond,k,num_lin)+(Vp(1:cond,k,num_lin)-Vpa(1:cond,k,num_lin))*.5-(Ex(1:cond,k,n,num_lin)-Ex(1:cond,k,n-2,num_lin))*.25)
 		ELSE 
 		B1(1:cond,1)=-((Vant(1:cond,k+1,num_lin)-Vant(1:cond,k-1,num_lin))/(dx+dx)-				&
-     		   Exn_1(1:cond,k)+Vp(1:cond,k,num_lin)+(Vp(1:cond,k,num_lin)-Vpa(1:cond,k,num_lin))*.5-(Exn(1:cond,k))*.25)
+     		   Ex(1:cond,k,n-1,num_lin)+Vp(1:cond,k,num_lin)+(Vp(1:cond,k,num_lin)-Vpa(1:cond,k,num_lin))*.5-(Ex(1:cond,k,n,num_lin))*.25)
 		END IF
 		B2(1:cond,1)=((Iant(1:cond,k+1,num_lin)+Iant(1:cond,k-1,num_lin)-2*Iant(1:cond,k,num_lin)))
 		B3(1:cond,1)=-((Vant(1:cond,k+1,num_lin)-Vant(1:cond,k-1,num_lin))/(dx+dx)-				&
-     		   Exn_1(1:cond,k)+Vp(1:cond,k,num_lin))
+     		   Ex(1:cond,k,n-1,num_lin)+Vp(1:cond,k,num_lin))
+
 
 		A3=matmul(Mv1,A1)
 		A4=matmul(Mv2,A2)
@@ -482,7 +465,7 @@ IF (t .GE. t0) THEN
 			dI(n,1:cond,k,num_lin)=0.D0
 			Vp(1:cond,k,num_lin)=0.D0
 	ENDIF
-11	END DO
+11	END DO ! Ends calculation for every dx
 
 !       MATRICES CONSTANTES PARA EL CALCULO DE DIFERENCIAS 
 !                        FINITAS
@@ -492,21 +475,22 @@ IF (t .GE. t0) THEN
 !*--------------------------------------------------------------
 !               Calculating inducing Source 
 !---------------------------------------------------------
-Vrini(1:cond,2)=Vrini(1:cond,2)+Vrini(1:cond,2)-V1ini(1:cond)+Evn_ini(1)*h(1:cond)
-Vrfin(1:cond,2)=Vrfin(1:cond,2)+Vrfin(1:cond,2)-V1fin(1:cond)+Evn_fin(1)*h(1:cond)
+Vrini(1:cond,2)=Vrini(1:cond,2)+Vrini(1:cond,2)-V1ini(1:cond)+Evini(n,num_lin)*h(1:cond)
+Vrfin(1:cond,2)=Vrfin(1:cond,2)+Vrfin(1:cond,2)-V1fin(1:cond)+Evfin(n,num_lin)*h(1:cond)
 
-Vrini(1:cond,1)=Vrini(1:cond,1)+(Exn_1(1:cond,1)+Exn(1:cond,2))*dx2*.5 
-Vrfin(1:cond,1)=Vrfin(1:cond,1)-(Exn_1(1:cond,kmax)+Exn(1:cond,kmax+1))*dx2*.5
+Vrini(1:cond,1)=Vrini(1:cond,1)+(Ex(1:cond,1,n-1,num_lin)+Ex(1:cond,2,n,num_lin))*dx2*.5 
+Vrfin(1:cond,1)=Vrfin(1:cond,1)-(Ex(1:cond,kmax,n,num_lin)+Ex(1:cond,kmax+1,n-1,num_lin))*dx2*.5
 
 !               Calculating Bounding Conditions
 !---------------------------------------------------------
-	Vi(1:cond,2)=matmul(D3i(1:cond,1:cond),(Vrini(1:cond,1)+matmul(D5(1:cond,1:cond),Vant(:,2,num_lin))-matmul(Zc(1:cond,1:cond),Ii(1:cond,3))))
-	Vi(1:cond,kmax)=matmul(D3i(1:cond,1:cond),(Vrfin(1:cond,1)+matmul(D5(1:cond,1:cond),Vant(1:cond,kmax,num_lin))+matmul(Zc(1:cond,1:cond),Ii(1:cond,kmax-1))))
+
+    Vi(1:cond,2)=matmul(D3i_i(1:cond,1:cond),(Vrini(1:cond,1)+matmul(D5_i(1:cond,1:cond),Vant(:,2,num_lin))-matmul(Zc_i(1:cond,1:cond),Ii(1:cond,3))))
+	Vi(1:cond,kmax)=matmul(D3i_f(1:cond,1:cond),(Vrfin(1:cond,1)+matmul(D5_f(1:cond,1:cond),Vant(1:cond,kmax,num_lin))+matmul(Zc_f(1:cond,1:cond),Ii(1:cond,kmax-1))))
 
 !               Calculating Influence of Zg on the bounding
 !------------------------------------------------------------------
-	Ii(1:cond,2)=matmul(Zci(1:cond,1:cond),(-Vi(1:cond,2)+Vrini(1:cond,1)))
-	Ii(1:cond,kmax)=matmul(Zci(1:cond,1:cond),(Vi(1:cond,kmax)-Vrfin(1:cond,1)))
+	Ii(1:cond,2)=matmul(Zci_i(1:cond,1:cond),(-Vi(1:cond,2)+Vrini(1:cond,1)))
+	Ii(1:cond,kmax)=matmul(Zci_f(1:cond,1:cond),(Vi(1:cond,kmax)-Vrfin(1:cond,1)))
 	IF (conductividad .EQ.1) THEN
 		Vpa(1:cond,2,num_lin)=Vp(1:cond,2,num_lin)
 		dI(n,1:cond,2,num_lin)=(Ii(1:cond,2)-Iant(1:cond,2,num_lin))
@@ -529,8 +513,8 @@ Vrfin(1:cond,1)=Vrfin(1:cond,1)-(Exn_1(1:cond,kmax)+Exn(1:cond,kmax+1))*dx2*.5
 	ENDIF
 !               Calculating Output Voltages
 !---------------------------------------------------------
-V1ini(1:cond)=Vi(1:cond,2)+Vi(1:cond,2) - Vrini(1:cond,1) -Evn_ini(2)*h(1:cond) -(Exn_1p(1:cond,1)+Exn(1:cond,2))*dx2*.5+Vp(1:cond,2,num_lin)
-V1fin(1:cond)=Vi(1:cond,kmax)+Vi(1:cond,kmax) - Vrfin(1:cond,1) -Evn_fin(2)*h(1:cond) +(Exn_1p(1:cond,kmax+1)+Exn(1:cond,kmax))*dx2*.5+Vp(1:cond,kmax,num_lin)
+V1ini(1:cond)=Vi(1:cond,2)+Vi(1:cond,2) - Vrini(1:cond,1) -Evini(n+1,num_lin)*h(1:cond) -(Ex(1:cond,1,n+1,num_lin)+Ex(1:cond,2,n,num_lin))*dx2*.5+Vp(1:cond,2,num_lin)
+V1fin(1:cond)=Vi(1:cond,kmax)+Vi(1:cond,kmax) - Vrfin(1:cond,1) -Evfin(n+1,num_lin)*h(1:cond) +(Ex(1:cond,kmax,n,num_lin)+Ex(1:cond,kmax+1,n+1,num_lin))*dx2*.5+Vp(1:cond,kmax,num_lin)
 
 !               Establishing Past Values to Iant
 !---------------------------------------------------------
@@ -627,31 +611,9 @@ ENDIF
 
 	ind_ini=ind_ini+6*cond
 
-!	DO i=1,cond
-		!Xvar(ind_ini +                (i-1)*(kmax+1)                       :(ind_ini-1)+            i*(kmax+1))		=Vant(i,:,num_lin) 
-		!Xvar(ind_ini +  cond*(kmax+1)+(i-1)*(kmax+1)                       :(ind_ini-1)+  cond*(kmax+1)+i*(kmax+1)) =Iant(i,:,num_lin) 
-		!Xvar(ind_ini +2*cond*(kmax+1)+(i-1)*(kmax+1)                     :(ind_ini-1)+2*cond*(kmax+1)+i*(kmax+1))  =Vp(i,:)
-		!Xvar(ind_ini +3*cond*(kmax+1)+(i-1)*(kmax+1)                     :(ind_ini-1)+3*cond*(kmax+1)+i*(kmax+1))  =Vpa(i,:)
-!		Xvar(ind_ini +4*cond*(kmax+1)+              (i-1)*(SIZE+2)       :(ind_ini-1)+4*cond*(kmax+1)+                i*(SIZE+2))=VR(i,:)
-!		Xvar(ind_ini +4*cond*(kmax+1)+  cond*(SIZE+2)+(i-1)*(SIZE+2)     :(ind_ini-1)+4*cond*(kmax+1)+  cond*(SIZE+2)+i*(SIZE+2))=dI(:,i)
-!	ENDDO
 
-!	IF (N .EQ. 1) THEN
-!		open(UNIT = 15, FILE = 'ten-corr_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1015,IOSTAT=ERRNUM)
-!		write(UNIT = 15) dI,Vant,Iant,Vp,Vpa,VR !Vant,Iant,Vi,Ii,Vrfin,Vrini,V1ini,V1fin,Vp,VR
-!		close (UNIT = 15)
-!
-!1015 SELECT CASE(ERRNUM>0)
-!			CASE (.TRUE.)
-!				write(*,*) 'Error saving leyendo ten-corr_'//indarchiv//'.dat  ',ERRNUM
-!			ENDSELECT 
-!	ENDIF
- 
-!	DEALLOCATE (h,Xi,Ci,Li,LCi,D3i,D5,A1,			&
-!				A2,Vp,VR,A3,A4,B1,B2,B3,B4,B5,B6,Vant,Iant,Vi,Ii,Evini,Evfin,	&
-!				Ex,Vrini,V1ini,Vrfin,V1fin,Zc,STAT=ALLOC_ERR)
-
-DEALLOCATE (h,Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4,Zc,Zci,STAT=ALLOC_ERR)
+DEALLOCATE (h,Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,Mv1,Mv2,Mv3,Mi1, &
+            Mi2,Mi3,Mi4,Zc_o,Zci_o,Vrini,V1ini,Vrfin,V1fin,STAT=ALLOC_ERR)
 !	DEALLOCATE (Ex2,Evini2,Evfin2,Ii,Vi,A1,A2,A3,A4,B1,B2,B3,B4,B5,B6,dI_p,STAT=ALLOC_ERR)
 
 

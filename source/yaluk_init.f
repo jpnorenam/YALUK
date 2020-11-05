@@ -10,6 +10,7 @@
 !		Grabar un solo archivo con todo los campos 
 !		y mantenerlo en memoria sin leer archivo
 !		Calcula el tiempo de inicio
+!       Incluye perfil de la línea
 !*   - Link with FOREIGN MODELS (Subroutine)                    %
 !*    Incluye Resistencia en el cable                           %
 !*    _ EV and EX equal for each conductor                                                          %
@@ -32,6 +33,8 @@
 !*      Xvar(9)=nlin											*
 !*      Xvar(10):maximum number of division in x				*
 !*      Xvar(11):maximum number of conductors                   *
+!*      Xvar(12): status_perfil (1 .True. 0 .False.)
+!*		Xvar(13): imprimir_inf                  				*
 !*      Xvar(20)=ind_ini1 !initial variable for saving h values
 !*		Xin(1):  t    (Tiempo de Execución)                     *
 !*		Xin(2):  Vant(1,1)                                      *
@@ -82,15 +85,15 @@ SUBROUTINE yaluk_init(xdata,xin,xout,xvar)
 	
 IMPLICIT NONE
 
-INTEGER SIZE_T,SIZE_T2,SIZE3,SIZE_ini, i, j, k,cond, kmax, SIZE_1,SIZE_2,g,n,ind_ini1,ind_ini,					&
-     nmaxi1,GNI,conductividad,num_lin,ALLOC_ERR,ERRNUM,ERRNUM2,ERRNUM_2
+INTEGER SIZE_T, i, j, k,cond, kmax, kmaxt, cond_max,SIZE_1,SIZE_2,g,n,ind_ini1,ind_ini,&
+     nmaxi1,GNI,conductividad,num_lin,ALLOC_ERR,ERRNUM,ERRNUM2,ERRNUM_2, p_kmax
 DOUBLE PRECISION xin(*), xout(*), xvar(*),xdata(*)
-DOUBLE PRECISION r, rant,dt, tmax,XA,XB, dt3,scale_factor,				&
+DOUBLE PRECISION r, rant,dt, tmax,XA,XB, 				&
      a,c, v, t, zlam, Hcan,tmax1,dt2,	dx2,dx,						&
      o, e,ang,t0,dti,ti,dti1,RSLT,h,angant,		&
      Ih1, Ih2, tao11, tao12,tao21,tao22, n1, n2, eta1, eta2,YR,L,	&
      BESSELI0,BESSELI1,t2,p,p12,pi, E_TIME,t02,				&
-        s,rc,e0,mu,vl,kcampo,  	X0,Y0,XA0,XB0,YA0,YB0,t0_min,t0_max,t_second,dist_camp
+        s,rc,e0,mu,vl,kcampo,  	X0,Y0,XA0,XB0,YA0,YB0,t0_min,dist_camp
 		
 !	INTEGER(2) ihr, imin, isec, i100th,ihr2, imin2, isec2, i100th2	
 
@@ -98,13 +101,15 @@ DOUBLE PRECISION v_s,zlam_s,Hcan_s,o_s,e_s,dx_s,Ih1_s,Ih2_s, &
 				tao11_s,tao21_s,n1_s,n2_s,X0_s,Y0_s,rc_s,YA0_s,YB0_s,XA0_s,XB0_s, &
 				dt_s,tmax_s 
 INTEGER Conductividad_s,nlin
+INTEGER status_int 
 
 CHARACTER (LEN=5) ncase_s
-CHARACTER (LEN=3) indarchiv
+CHARACTER (LEN=3) indarchiv,kmax_s
+CHARACTER (LEN=15) FORMATO
 CHARACTER (LEN=30) archivo, casename,evalue,prueba_archiv
-CHARACTER(LEN=512) dir
-INTEGER(4) length,ncase,nline,status_int
-LOGICAL(4) status, status_bas,status_ef,status_hm,triangular,Imprimir_campo,campo_distante
+CHARACTER(512) dir
+INTEGER(4) length,ncase
+LOGICAL(4) status_perfil,status, status_bas,status_ef,status_hm,triangular,Imprimir_campo,campo_distante,Imprimir_inf,Read_campo
 LOGICAL comparar
 INTEGER, SAVE :: ALLOC_ERR_I
 
@@ -114,11 +119,11 @@ PARAMETER (c=2.99792458E8)
 PARAMETER (e0=1/(mu*c**2))
 
 
-DOUBLE PRECISION, ALLOCATABLE :: Rm(:,:),hm(:),Xi(:),hm_s(:),Xi_s(:),Cm(:,:),Lm(:,:),Li2(:,:),	&
-		Ci(:,:),Li(:,:),LCi(:,:),LC(:,:),D1(:,:),D3i(:,:),D2(:,:),D6(:,:),D7(:,:),Mv1(:,:),Mv2(:,:),Mv3(:,:),		&
-		D4i(:,:),D3(:,:),D4(:,:),D5(:,:),Ro(:),Rf(:),Mi1(:,:),Mi2(:,:),Mi3(:,:),Mi4(:,:),				&
-		Evini(:),Evfin(:), EZ(:),EH(:),Ex(:,:,:),					&
-		Zc(:,:),Zci(:,:)
+DOUBLE PRECISION, ALLOCATABLE :: Rm(:,:),h_perfil(:,:),hm(:),Xi(:),hm_s(:),Xi_s(:),Cm(:,:),Lm(:,:),Li2(:,:),	&
+		Ci(:,:),Li(:,:),LCi(:,:),LC(:,:),D1(:,:),D3i(:,:,:),D2(:,:),D6(:,:),D7(:,:),Mv1(:,:,:),Mv2(:,:,:),Mv3(:,:,:),		&
+		D3(:,:),D5(:,:,:),Ro(:),Rf(:),Mi1(:,:,:),Mi2(:,:,:),Mi3(:,:,:),Mi4(:,:,:),				&
+		Evini(:),Evfin(:),Ev(:), EZ(:),EH(:),Ex(:,:,:),					&
+		Zc(:,:),Zc_o(:,:,:),Zci(:,:),Zci_o(:,:,:)
 
 DOUBLE PRECISION, ALLOCATABLE :: Icorr(:),tcorr(:),i02(:),i12(:)
 
@@ -129,7 +134,7 @@ DOUBLE PRECISION, ALLOCATABLE :: Icorr(:),tcorr(:),i02(:),i12(:)
 ! max_lin: numero máxmio de líneas
 !		Ci(4,4),Li(4,4),Lm(4,4),Cm(4,4),Ro(4),Rf(4),Rt,					&
 !    	LCi(4,4),LC(4,4),D1(4,4),D3i(4,4),D2(4,4),D4i(4,4),				&
-!       D3(4,4),D4(4,4),
+!       D3(4,4),
      	
 !*	----------------------------------------------
 !Cm	COMMON DATA FOR LINE DESCRIPTION
@@ -186,14 +191,24 @@ EXTERNAL IPULSE,BESSELI0,BESSELI1,comparar
 
 !kmaxt=100	! kmaxt; número máximo de divisiones en las líneas
 !max_lin=20	! max_lin: numero máxmio de líneas
+	  
 
 archivo='yaluk.ini'
 ERRNUM=0
 
-
+!****************************
+!* STATUS_FILE.YLK
+!* FILE READ for identify simulation parameters between lines
+!**********************************
 OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM2)
-READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min,t0_max
+READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min,kmaxt,cond_max,imprimir_inf 
 CLOSE (UNIT=11)
+    IF (Xvar(12) .EQ. 1) THEN
+        status_perfil=.TRUE.
+    ELSE
+        status_perfil=.FALSE.
+    ENDIF
+
 
 
 1011 SELECT CASE(ERRNUM2>0)
@@ -207,80 +222,84 @@ CLOSE (UNIT=11)
 	!IF (length .EQ. 0) THEN
 	!  WRITE (*,*) 'Failed to get current directory'
 	!END IF
-
-	CALL GETCWD(dir, status_int)
-	IF (status_int .NE. 0) THEN
-	  WRITE (*,*) 'Failed to get current directory. Error:  ',status_int
-	END IF
-
+	
+	CALL GETCWD(dir, status_int)	
+	IF (status_int .NE. 0) THEN	
+	  WRITE (*,*) 'Failed to get current directory. Error:  ',status_int	
+	END IF	
+	
+	
+	
+	
 1012 SELECT CASE(ERRNUM>0)
 	CASE (.TRUE.)
-			!write(*,*) 'Configuration file not founded:',dir, 
 			WRITE(*,*) 'Configuration file not founded:',TRIM(dir),'/',archivo
 			write(*,*) 'please enter name file:'
 			read(*,*) archivo
 	END SELECT 
 
 		write(*,*) "*****************************************************"
-		write(*,*) "NATIONAL UNIVERSITY OF COLOMBIA"
-		write(*,*) "Runing DLL-YALUK with R in conductor 2009"
-		CALL GETENV ("CPU ", evalue) 
-		write(*,*) 'Using CPU=',evalue
-		write(*,*) 'Authors: Ernesto Perez - Edison Soto'
-		write(*,*) 'Contact: eperezg@unal.edu.co - easotor@unal.edu.co'
+		write(*,*) "! NATIONAL UNIVERSITY OF COLOMBIA"
+		write(*,*) "! Runing YALUK_Linux version with R in conductor 2020 - Line Profile"
+		CALL GETENV ("CPU", evalue) 
+		write(*,*) '! Using CPU=',evalue
+		write(*,*) '! Authors: Ernesto Perez - Edison Soto'
+		write(*,*) '! Contact: eperezg@unal.edu.co - easotor@unal.edu.co - jpnorenam@unal.edu.co'
 		write(*,*) "******************************************************"
 
 
 	OPEN (UNIT = 12, FILE = TRIM(archivo), STATUS = 'OLD', ERR=1012,IOSTAT=ERRNUM)
-		!READ(12,*) casename !Case Name
-		!READ(12,*) ncase    !Case Number
-		!IF (.NOT. EOF(12)) THEN
-		!	READ(12,*) nlin     ! Maximum number of Lines
-    	!	IF (.NOT. EOF(12)) THEN
-	    !		READ(12,*) Xvar(11)     ! Maximum number of Lines
-		!    ELSE
-		!	    Xvar(11)=6
-	    !	END IF
-		!IF ()
-		!ELSE
-		!	nlin=0
-		!END IF
-
-		nline = 0
-
-
-				nlin = 0
-				Xvar(11) = 6
-			    READ (12, *, end=999) casename
-
-			    READ (12, *, end=999) ncase
-
-
-			    READ (12, *, end=999) nlin
-
-
-			    READ (12, *, end=999) Xvar(11)
-
-
-		999 continue
-
+		READ(12,*) casename !Case Name
+		READ(12,*) ncase    !Case Number
+		READ(12,*) nlin ! Maximum number of Lines
+		READ(12,*) cond_max     ! Maximum number of conductors
+		IF (cond_max>8) THEN
+	    		    cond_max=8
+	    ELSEIF(cond_max .EQ. 0)THEN
+	    	cond_max=4
+	    	write(*,*) '*WARN* maximum number of conductors was set equal to zero and it is not logical'
+   	    	write(*,*) '*WARN* Correct the problem modifying file Yaluk.ini'
+            write(*,*) '*INF* maximum number of conductors will be set automatically in 4'
+	    ENDIF
 
 	CLOSE (UNIT=12)
-	!status = CHANGEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-	write(*,*) 'Trying to open: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
-	CALL CHDIR(TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
+    !****************************
+    ! CONFIGURATION MISC. FILE
+    !******************************
 
-		IF (status_int .EQ. 0) THEN
+    OPEN (UNIT = 21, FILE = 'yaluk_status.ini', FORM='FORMATTED', STATUS = 'OLD', ERR=9011,IOSTAT=ERRNUM2)
+        READ   (21, *) Imprimir_campo  !Identify if Electromagnetic field will be printed
+        READ   (21, *) Imprimir_inf    !!Identify if information of the process will be printed
+		status_perfil=.FALSE.
+        READ   (21, *, end=995) Read_campo      !Identify if Electromagnetic field will extarnally read
+	    
+		READ   (21, *) status_perfil
+995 CONTINUE
+		
+    CLOSE (21)
+    9011 SELECT CASE(ERRNUM2>0)
+	        CASE (.TRUE.)
+            Imprimir_campo=.FALSE.
+            Imprimir_inf=.FALSE.
+            Read_campo=.FALSE.
+            status_perfil=.FALSE.
+          END SELECT 
+
+
+	!status = CHANGEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
+	write(*,*) '*INF* Trying to open: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))	
+	CALL CHDIR(TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
+		IF (status_int .NE. 0) THEN
 				!dir = FILE$CURDRIVE
 				!length = GETDRIVEDIRQQ(dir)
-				CALL GETCWD(dir, status_int)
-			write(*,*) 'Current Directory for cases: ',TRIM(dir)
+			CALL GETCWD(dir, status_int)
+			write(*,*) '*INF* Current Directory for cases:  ',TRIM(dir)
 		ELSE
 			!status = MAKEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
-			write(*,*) 'Trying to create: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
-			CALL SYSTEM( 'mkdir ' //TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
-			IF (status_int .EQ. 0) THEN
-				!write(*,*) ' Directory for cases was created ',dir(1:length)//'\'//casename(1:LEN_TRIM(casename))
+			write(*,*) 'Trying to create: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))	
+			CALL SYSTEM( 'mkdir ' //TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)			
+			
+			IF (status_int .NE. 0) THEN
 				write(*,*) ' Directory for cases was created ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
 				write(*,*) '**************************************************************'
 				write(*,*) '*  PLEASE PUT THE LINE AND MISCELANEO FILES IN THIS DIRECTORY*'
@@ -288,12 +307,10 @@ CLOSE (UNIT=11)
 				!pause
 
 			ELSE
-				!write(*,*) ' Error Creating Directory: ',dir(1:length)//'\'//casename(1:LEN_TRIM(casename))
 				write(*,*) ' Error Creating Directory: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
 				write(*,*) ' Please check permissions'
 			ENDIF
 		END IF
-
 		!****************************************************************************
 		!OPENING LINE DATA FOR CALCULATING t0
 		! CALCULATING MAXIMUM KMAXT
@@ -301,14 +318,12 @@ CLOSE (UNIT=11)
 		cond=1 ! int(Xdata(3))
 		ALLOCATE (Rm(cond,cond),hm(1:cond),Xi(1:cond), STAT=ALLOC_ERR)
 		t0_min=1.D200
-		t0_max=0
-		Xvar(10)=0 !número máximo de divisiones
+		kmaxt=0 !número máximo de divisiones
 		IF (nlin.GT.0)		THEN
-		
-		WRITE(ncase_s,FMT=121) ncase
 		121		FORMAT(I5.5)
+		WRITE(ncase_s,FMT=121) ncase
 			CALL OPEN_CORR_FILE (Ih1,Ih2,tao11,tao21,tao12,tao22,n1,n2,X0,Y0,ncase_s)
-			CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,Conductividad,o,e,dx,triangular,dist_camp)
+			CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,conductividad,o,e,dx,triangular,dist_camp)
 			DO i=1,nlin
 				120 FORMAT(I3.3) 
 				WRITE(indarchiv,FMT=120) int(i)
@@ -321,8 +336,9 @@ CLOSE (UNIT=11)
 					YR=(YA0-Y0)*cos(a)-(XA0-X0)*sin(a)
 					L=XA-XB
                     
-                   if (nint(L/dx)+4 .GT. Xvar(10)) THEN
-                     Xvar(10)=nint(L/dx)+4
+                   if (nint(L/dx)+4 .GT. kmaxt) THEN
+                     kmaxt=nint(L/dx)+4
+                     
                     END IF
 					IF (XA .LT. 0 .AND. XA .GT. XB) THEN
 						t0=(XA**2+Yr**2)**0.5/c;
@@ -338,8 +354,6 @@ CLOSE (UNIT=11)
 					
 					IF (t0.LE.t0_min) THEN
 						t0_min=t0
-					ELSEIF(t0.GE.t0_max) THEN
-					    t0_max=t0
 					END IF
 				END IF
 
@@ -349,14 +363,14 @@ CLOSE (UNIT=11)
 			t0_min=t0_min-dt
 		ELSE
 			t0_min=0
-			t0_max=0
-			Xvar(10)=200
+			kmaxt=200
 		END IF
-    !****************************************************************************
-    !****************************************************************************
-
-			write(*,*)'t0_min=',t0_min !WRITES THE INITIAL TIME
 		
+    !****************************************************************************
+    !****************************************************************************
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+			write(*,*)'*INF* Initial time t0_min=',t0_min !WRITES THE INITIAL TIME
+	ENDIF	
 		DEALLOCATE (Rm,hm,Xi,STAT=ALLOC_ERR)
 		!____________________________________________________________________________
 		!****************************************************************************
@@ -367,16 +381,21 @@ CLOSE (UNIT=11)
 		!File for knowing if any line is already calculated
 		WRITE(ncase_s,FMT=101) ncase
 		OPEN (UNIT = 13, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'UNKNOWN', ERR=1013,IOSTAT=ERRNUM)
-		WRITE (UNIT=13) dt_s,tmax_s,ncase_s,casename,t0_min,t0_max
+		WRITE (UNIT=13) dt_s,tmax_s,ncase_s,casename,t0_min,kmaxt,cond_max,imprimir_inf
 		CLOSE(UNIT=13)
 		write(*,*)'CASE NO:',ncase_s
 1013	SELECT CASE(ERRNUM>0)
 			CASE (.TRUE.)
-			WRITE(*,*) 'Error saving status_file.ylk', ERRNUM
+			WRITE(*,*) '*ERROR* saving status_file.ylk', ERRNUM
 			END SELECT 
 
 		END SELECT
 ERRNUM=0
+
+
+
+
+
 	
 !*		-----------------------
 !*		Setting Input Variables
@@ -393,22 +412,27 @@ num_lin=Xdata(4)
 !t0_min=Xvar(9)
 100 FORMAT(I3.3) 
 WRITE(indarchiv,FMT=100) int(Xdata(4))
-!open(UNIT = 99, FILE = 'cond_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN')
-!write(UNIT = 99) cond
-!close(UNIT = 99)
+IF (imprimir_campo .EQV. .TRUE.) THEN
+    open(UNIT = 99, FILE = 'cond_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN')
+    write(UNIT = 99) cond
+    close(UNIT = 99)
+ENDIF
+
 
 
 	  ALLOCATE (Rm(cond,cond),hm(1:cond),Xi(1:cond),hm_s(1:cond),Xi_s(1:cond),Cm(cond,cond),Lm(cond,cond),Li2(cond,cond),					&
-		Ci(cond,cond),Li(cond,cond),LCi(cond,cond),LC(cond,cond),Mv1(cond,cond),Mv2(cond,cond),Mv3(cond,cond),Mi1(cond,cond),Mi2(cond,cond),Mi3(cond,cond),Mi4(cond,cond),		&
-		D1(cond,cond),D3i(cond,cond),D2(cond,cond),D4i(cond,cond),D5(cond,cond),D6(cond,cond),D7(cond,cond),Zc(cond,cond),		&
-		Zci(cond,cond),D3(cond,cond),D4(cond,cond),Ro(cond),Rf(cond), STAT=ALLOC_ERR)
+		Ci(cond,cond),Li(cond,cond),LCi(cond,cond),LC(cond,cond),		&
+		D1(cond,cond),D3i(cond,cond,2),D2(cond,cond),D5(cond,cond,2),D6(cond,cond),D7(cond,cond),Zc(cond,cond),Zc_o(cond,cond,2),Zci_o(cond,cond,2),		&
+		Zci(cond,cond),D3(cond,cond),Ro(cond),Rf(cond), STAT=ALLOC_ERR)
 
 
 IF (dt .EQ. dt_s .AND. tmax .EQ. tmax_s) THEN
 	status_bas=.TRUE.
 	open(UNIT = 14, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'OLD',ERR=1014,IOSTAT=ERRNUM)
 	read(UNIT = 14, ERR=1021,IOSTAT=ERRNUM_2) v_s,zlam_s,Hcan_s,Conductividad_s,o_s,e_s,dx_s,Ih1_s,Ih2_s,tao11_s,tao21_s,n1_s,n2_s,X0_s,Y0_s,rc_s,YA0_s,YB0_s,XA0_s,XB0_s,hm_s,Xi_s,kmax,t0
-	write(*,*) 'cargando datos Base de caso previo: ',indarchiv
+	IF (Imprimir_inf .EQV. .TRUE.) THEN
+	write(*,*) '*INF* Loading database of previous case: ',indarchiv
+    ENDIF
 	close (UNIT = 14)
 	
 1014 SELECT CASE(ERRNUM>0)
@@ -434,15 +458,27 @@ t=Xin(1)
 !*		-----------------------------------------------------------------
 !*         READING MISCELANEOUS PARAMETERS
 !*		_________________________________________________________________
-
-CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,Conductividad,o,e,dx,triangular,dist_camp)
-
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*Opening Miscelaneous file' 
+	    
+    ENDIF
+CALL OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,conductividad,o,e,dx,triangular,dist_camp)
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*File succesfully read' 
+	    
+    ENDIF
 !		------------------------------------
 !        Reading Lightning Current Parameters
 !		------------------------------------
-
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*Opening Current file' 
+	    
+    ENDIF
 CALL OPEN_CORR_FILE (Ih1,Ih2,tao11,tao21,tao12,tao22,n1,n2,X0,Y0,ncase_s)
-
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*File succesfully read' 
+	    
+    ENDIF
 !	------------------------------------------------------
 !        Reading Line Position and Stroke Parameters
 !	------------------------------------------------------
@@ -464,42 +500,32 @@ CALL OPEN_CORR_FILE (Ih1,Ih2,tao11,tao21,tao12,tao22,n1,n2,X0,Y0,ncase_s)
 !      YR :=(YA0-Y0)*cos(a)-(XA0-X0)*sin(a)
 !	L=XA-XB
 !inicializando valores
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*Opening Line file' 
+	    
+    ENDIF
  	CALL OPEN_LINE_FILE(rc,XA0,YA0,XB0,YB0,hm,Rm,Xi,cond,indarchiv)
-
+IF (Imprimir_inf ) THEN
+	    write(*,*) '*File succesfully read' 
+	    
+    ENDIF
+    
 
 !configuring maximum first window from front time
+IF (.NOT. read_campo) THEN
 tmax1=1.8*(tao11**n1*tao21*n1)**(1/(1+n1))
-  OPEN (UNIT = 101, FILE = 'interp.txt', STATUS = 'OLD',ERR=10101,IOSTAT=ERRNUM)
-   READ (101,*) t_second
-   READ (101,*) dt3
-   CLOSE(101)
-10101 SELECT CASE(ERRNUM>0)
-	    CASE (.TRUE.)
-			write(*,*) 'error leyendo interp.txt'
-t_second=10.e-6 !maximum time for calculation on the farthest line
-dt3=.5e-6           !discretization time for improving matrix size
-		ENDSELECT 
- 
-scale_factor=real(nint(dt3/dt))
-dt3=dt*scale_factor      
-SIZE_T = nint(tmax / dt)
-SIZE_1= nint(tmax1/dt)
-!***********************************************************
-! including new size elements for reducing matrix dimension
-SIZE_ini=SIZE_1+nint((t0_max+t_second)/dt)
-IF (SIZE_T.LE.SIZE_ini-nint(dt3/dt)) THEN
-    SIZE_ini=SIZE_T-1
-    SIZE3=1
 ELSE
-    SIZE3=nint((tmax-real(SIZE_ini)*dt)/dt3)
+tmax1=tmax-dt;
 ENDIF
-SIZE_T2=SIZE_ini+SIZE3
-!***********************************************************
+
+SIZE_T = nint(tmax / dt)		!number of time division for the whole window 
+SIZE_1= nint(tmax1/dt)			!number of time division for first window
 dti=.05D-8
 dti1=dti
 nmaxi1=nint(dt*SIZE_1/dti)
 dt2= (tmax-tmax1)/SIZE_2 !time step for second window
 SIZE_2=SIZE_2+1			!number of time division for first window
+
 a=ATAN2((YA0-YB0),(XA0-XB0))
 XA=(XA0-X0)*cos(a)+(YA0-Y0)*sin(a)
 XB=(XB0-X0)*cos(a)+(YB0-Y0)*sin(a)
@@ -514,9 +540,12 @@ L=XA-XB
 !*************************************************************************
 
 IF (dx.LE.dt*(1.1*c) .OR. dx .EQ.0) THEN
-!	write(*,*) 'Warning: dx is too small or equal to 0. unconvergence is very likely' 
 	dx=dt*(2*c)         !
-	write(*,*) 'dx is automatically computed dx=',dx 
+
+    IF (Imprimir_inf ) THEN
+	    write(*,*) '*WARNING*  dx is too small or equal to 0. unconvergence is very likely' 
+	    write(*,*) '*WARNING* (500)dx is automatically computed dx=',dx 
+    ENDIF
 ENDIF
 		
 
@@ -524,22 +553,77 @@ dx2=c*dt
 
 kmax = nint((L-2*dx2)/dx+2) !taking into account the two bergeron lines for coupling with ATP
 if (kmax.LE.3) THEN
-    		write(*,*) 'Number of divisions on the line is too small - reduce dt value'
+    		write(*,*) '*INF* Number of divisions on the line is too small - reduce dt value'
     		STOP 
 ENDIF
 dx=(L-2*dx2)/real(kmax-2)
 IF ((L-(kmax-2)*dx-2*dx2).GE.(0.5*dx)) THEN
 	kmax=kmax+1
 END IF
-!write(*,*)'longitud=',(kmax-2)*dx+2*dx2,'dx2=',dx2, '  dx=',dx
 
+IF (Imprimir_inf .EQV. .TRUE.) THEN
+    write(*,*)'*INF* (516)longitude=',(kmax-2)*dx+2*dx2
+    write(*,*)'*INF*     ,dx2=',dx2, '  dx=',dx
+END IF
+
+
+IF (status_perfil .EQV. .TRUE.)THEN
+    p_kmax=kmax !Define the maximum number of points in x for line when is introduced height non_linearities
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+        write(*,*)'*INF* Using line profile kmax=',kmax
+    END IF
+ELSE
+    p_kmax=1
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+        write(*,*)'*INF* Homogenuous line kmax=1'
+    END IF
+
+ENDIF
+
+!**********************
+!* ALOCATING Mvs and Mis and hperfil variables
+!*********************+
+
+ALLOCATE (Mv1(cond,cond,p_kmax),Mv2(cond,cond,p_kmax),Mv3(cond,cond,p_kmax),Mi1(cond,cond,p_kmax),Mi2(cond,cond,p_kmax),&
+        Mi3(cond,cond,p_kmax),Mi4(cond,cond,p_kmax),h_perfil(1:p_kmax,1:cond),STAT=ALLOC_ERR)
+ 
+   
+    IF (ALLOC_ERR .NE. 0) THEN
+        IF (Imprimir_inf .EQV. .TRUE.) THEN
+	        write(*,*) '*ERROR* Allocating Mvs (536_Yaluk.init) Err=',ALLOC_ERR 
+        ENDIF
+    ENDIF
+    
+    IF (status_perfil .EQV. .TRUE.) THEN
+        CALL OPEN_LINE_PROFILE(h_perfil,p_kmax,cond,indarchiv)
+    ELSE
+        h_perfil(1,:)=hm(:)
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+        write(*,*)'*INF* Height ',h_perfil(1,:)
+    END IF
+
+    ENDIF
+
+!**********************
 
 IF( .NOT. ALLOCATED(Evini)) THEN
-    ALLOCATE (Evini(SIZE_T2+2),Evfin(SIZE_T2+2),EZ(SIZE_T+2),EH(SIZE_T+2),			&
-		  Ex(cond,kmax+1,SIZE_T2+2),STAT=ALLOC_ERR)
+    ALLOCATE (Evini(SIZE_T+2),Evfin(SIZE_T+2),Ev(SIZE_T+2),EZ(SIZE_T+2),EH(SIZE_T+2),			&
+		  Ex(cond,kmax+1,SIZE_T+2),STAT=ALLOC_ERR)
+    IF (ALLOC_ERR .NE. 0) THEN
+        IF (Imprimir_inf .EQV. .TRUE.) THEN
+	        write(*,*) '*ERROR* Allocating Evini (542)Yaluk.init) Err=',ALLOC_ERR 
+        ENDIF
+    ENDIF
+
 ENDIF
+
 IF( .NOT. ALLOCATED(Icorr)) THEN
     ALLOCATE (Icorr(nmaxi1+11*SIZE_2),tcorr(nmaxi1+11*SIZE_2),i02(SIZE_T+2),i12(SIZE_T+2),STAT=ALLOC_ERR_I) 
+    IF (ALLOC_ERR .NE. 0) THEN
+        IF (Imprimir_inf .EQV. .TRUE.) THEN
+	        write(*,*) '*ERROR* allocating Icorr (552)Yaluk.init) Icorr=',ALLOC_ERR_I 
+        ENDIF
+    ENDIF
 ENDIF
 !-------------------------------------------------------
 !ALLOC_ERR_I - INDICA SI LA CORRIENTE YA FUE CALCULADA
@@ -557,16 +641,18 @@ ELSE
 
 ENDIF
 
-IF (status_bas .AND. v_s .EQ. v .AND. zlam_s .EQ. zlam .AND. Hcan .EQ. Hcan .AND. Conductividad_s .EQ. Conductividad		&
+IF (status_bas .AND. v_s .EQ. v .AND. zlam_s .EQ. zlam .AND. Hcan .EQ. Hcan .AND. Conductividad_s .EQ. conductividad		&
 	.AND. o_s .EQ. o .AND. e_s .EQ. e .AND. dx_s .EQ. dx .AND. Ih1_s .EQ. Ih1 .AND. Ih2_s .EQ. Ih2 .AND. tao11_s .EQ. tao11	&
 	.AND. tao21_s .EQ. tao21 .AND. n1_s .EQ. n1 .AND. n2_s .EQ. n2 .AND. X0_s .EQ. X0 .AND. Y0_s .EQ. Y0.AND. rc_s .EQ. rc	&
 	.AND. YA0_s .EQ. YA0 .AND. YB0_s .EQ. YB0 .AND. XA0_s .EQ. XA0.AND. XB0_s .EQ. XB0 ) THEN
 
 	    open(UNIT = 15, FILE = ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'OLD',ERR=1015,IOSTAT=ERRNUM)
-		read(UNIT = 15) Evini,Evfin,Ex,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
+		read(UNIT = 15) Evini,Evfin,Ex,D3i,D5,Zc_o,Zci_o,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 
+IF (Imprimir_inf .EQV. .TRUE.) THEN
+	write(*,*) '*INF* Loading EM data from calculated file: line'//indarchiv
+ENDIF
 
-!	write(*,*) 'cargando datos de Campo electromagnético del archivo previo linea'//indarchiv
 	status_ef=.FALSE.
 	close (UNIT = 15)
 1015 SELECT CASE(ERRNUM>0)
@@ -577,12 +663,10 @@ ELSE
 	status_ef=.TRUE.
 ENDIF
 
-!write(*,*) 'status_bas ',status_bas,' status_hm ',status_hm,' status_ef ',status_ef
- IF (status_bas .EQV. .FALSE. .OR. status_hm .EQV. .TRUE. .OR. status_ef .EQV. .TRUE. ) THEN
+ IF (.NOT. status_bas .OR. status_hm  .OR. status_ef ) THEN
 !******************************************************************************************
 !				CALCULATING LINE PARAMETERS
 !******************************************************************************************
-	CALL LINEPARAM(cond,Xi,hm,rc,Lm,Cm,Zc)
 
 
 
@@ -598,60 +682,106 @@ ENDIF
 !* Zci: Inversa Impedancia Característica
 !*
 !*--------------------------------------------------------------
+!	READ(12) D3i_o,D5_o,Zc_o,Zci,Mv1_o,Mv2_o,Mv3_o,Mi1_o,Mi2_o,Mi3_o,Mi4_o
 
+
+
+    DO k=1,p_kmax
+        hm(:)=h_perfil(k,:)
+	    CALL LINEPARAM(cond,Xi,hm,rc,Lm,Cm,Zc)
 		CALL inv(Zc,cond,cond,Zci)
 		CALL mult(Lm,Cm,LC,cond,cond,cond)
 		CALL inv(Cm,cond,cond,Ci)
 		CALL inv(Lm,cond,cond,Li)
 		CALL inv(LC,cond,cond,LCi)
-
 !*	--------------------------------
 !*	matrix Construction M
 !*	--------------------------------
-
-
-Mv1=.5*dt/dx*Ci
-Mv2=.25*dt*dt/dx*LCi
-Mv3=.25*dt*dt/dx*matmul(Rm,LCi)
-Mi1=dt*Li
-Mi2=.5*dt*dt/(dx*dx)*LCi
-Mi3=.5*dt*dt*matmul(Rm,Li)
+    Mv1(:,:,k)=.5*dt/dx*Ci
+    Mv2(:,:,k)=.25*dt*dt/dx*LCi
+    Mv3(:,:,k)=.25*dt*dt/dx*matmul(Rm,LCi)
+    Mi1(:,:,k)=dt*Li
+    Mi2(:,:,k)=.5*dt*dt/(dx*dx)*LCi
+    Mi3(:,:,k)=.5*dt*dt*matmul(Rm,Li)
 !********************************************
 !Considering loss in the conductor
- D6=dt*Rm
- D6=matmul(D6,Li)
- D7=0.5*dt*dt*matmul(Rm,Rm)
+    D6=dt*Rm
+    D6=matmul(D6,Li)
+    D7=0.5*dt*dt*matmul(Rm,Rm)
  !Li2=matmul(Li,Li)
- D7=matmul(D7,Li)
- Mi4=-D6-D7
+    D7=matmul(D7,Li)
+    Mi4(:,:,k)=-D6-D7
 !********************************************	
 
 !*	--------------------------------
 !*	Construcción de D1, D2, D3i, D4i
 !*	--------------------------------
-	D1=dx/dt*Cm
 	D2=D1
-	D5=matmul(D1,Zc)
-	D1=D5
-	D2=D5
-	D3=D5
-	D4=D5
+	!D1=D5
+!	D2=D5
+!	D4=D5
 	
 
 
 
-DO 21, i=1,cond
-  D1(i,i)=D1(i,i)-1
-  D2(i,i)=D2(i,i)-1
-  D3(i,i)=D3(i,i)+1
-  D4(i,i)=D4(i,i)+1
-  Mi4(i,i)=Mi4(i,i)+1 !Considering loss in the conductor
-
+    DO 21, i=1,cond
+!        D1(i,i)=D1(i,i)-1
+!        D2(i,i)=D2(i,i)-1
+        D3(i,i)=D3(i,i)+1
+!        D4(i,i)=D4(i,i)+1
+        Mi4(i,i,k)=Mi4(i,i,k)+1 !Considering loss in the conductor
 21	CONTINUE
-	CALL inv(D3,cond,cond,D3i)
-	CALL inv(D4,cond,cond,D4i)
- ENDIF
+!	CALL inv(D4,cond,cond,D4i)
+    
+        if (k.EQ.1) THEN
+            Zc_o(:,:,1)=Zc
+            Zci_o(:,:,1)=Zci
+        	D1=dx/dt*Cm
+        	D5(:,:,1)=matmul(D1,Zc)
+        	D3=D5(:,:,1)
+      	    DO i=1,cond
+                D3(i,i)=D3(i,i)+1
+            ENDDO
+		IF (Imprimir_inf .EQV. .TRUE.) THEN
+        	write(*,*) '*INF* D3=',D3
+        END IF
 
+            CALL inv(D3,cond,cond,D3i(:,:,1))
+            IF(p_kmax.EQ.1)THEN
+                Zc_o(:,:,2)=Zc
+                Zci_o(:,:,2)=Zci
+                D5(:,:,2)=D5(:,:,1)
+                D3i(:,:,2)=D3i(:,:,1)
+            ENDIF
+
+        ELSEIF (k.EQ.kmax)THEN
+            Zc_o(:,:,2)=Zc
+            Zci_o(:,:,2)=Zci
+        	D1=dx/dt*Cm
+        	D5(:,:,2)=matmul(D1,Zc)
+        	D3=D5(:,:,2)
+      	    DO i=1,cond
+                D3(i,i)=D3(i,i)+1
+            ENDDO
+            CALL inv(D3,cond,cond,D3i(:,:,2))
+
+        ENDIF
+
+    ENDDO
+    
+!********************FINISH CALCULATING M************************
+ENDIF
+
+IF (Imprimir_inf) THEN
+	write(*,*) '*INF* Surge Impedance Zc=',Zc
+	write(*,*) '*INF* Surge Impedance Zci=',Zci
+	write(*,*) '*INF* Inductance Lm=',Lm
+	write(*,*) '*INF* Capacitance Cm=',Cm
+	write(*,*) '*INF* Capacitance D2=',D2
+	write(*,*) '*INF* Capacitance Mi4=',Mi4
+	write(*,*) '*INF* Capacitance hm=',hm
+	write(*,*) '*INF* Capacitance rc=',rc
+ENDIF
 
 
 
@@ -694,17 +824,37 @@ IF (status_ef) THEN
 
 
 
-!***************************************************************
-!***************************************************************
+!***********************************************************************
+! EVALUATING CALCULATION OF ELECTROMAGNETIC FIELD  
+!
+! Here is evaluated if the EM Field will be calculated depending on
+!
+! 1. lightning is too far from the line (defined on variable dist_camp)
+! 2. Current is zero (Ih1=0) used when just the line model will be used
+! 3. 
+!***********************************************************************
 
-	
+	IF (Ih1 .EQ. 0) THEN
+	        IF (Imprimir_inf) THEN
+		        write(*,*) '*WARN* Current Amplitude is equal to zero, then, EM field is zero'
+		        write(*,*) '*INF* Routine will be use only the line model'
+   		        write(*,*) '*INF* too far away - for not disregarding EM field, change miscelaneo.txt file'
+            ENDIF
+
+	 campo_distante=.TRUE.
+	ELSE    
 	IF (t0 .GT. dist_camp/c) THEN
-		write(*,*) 'Disregarding the EM field calculation for this line_',indarchiv
-		write(*,*) 'too far away - for not disregarding EM field, change miscelaneo.txt file'
-		campo_distante=.TRUE.
-	ELSE
-		campo_distante=.FALSE.
-	END IF
+	
+	        IF (Imprimir_inf .EQV. .TRUE.) THEN
+		        write(*,*) '*INF* Disregarding the EM field calculation for line_',indarchiv
+		        write(*,*) '*INF* line too far away - dist_camp=',dist_camp
+   		        write(*,*) '*INF* too far away - for not disregarding EM field, change miscelaneo.txt file'
+            ENDIF
+		    campo_distante=.TRUE.
+	    ELSE
+		    campo_distante=.FALSE.
+	    ENDIF
+	ENDIF
 !***************************************************************
 !***************************************************************
 
@@ -716,16 +866,21 @@ IF (status_ef) THEN
 !	--------------------------
 	ti=0.D0
 
-IF (campo_distante .EQV. .FALSE.) THEN
-	IF (ERRNUM2 .GT. 0) THEN
-	IF (triangular .EQV. .TRUE.) THEN
-		write(*,*) 'Usando onda triangular'
-	ELSE
-		write(*,*) 'Usando onda Heidler'
-	ENDIF
-	END IF
+IF (.NOT. campo_distante) THEN
+    IF (triangular .EQV. .TRUE.) THEN
+	    IF (Imprimir_inf .EQV. .TRUE.) THEN
+	        write(*,*) '*INF* Using triangular waveform'
+        ENDIF
+    ELSE
+	    IF (Imprimir_inf .EQV. .TRUE.) THEN
+	        write(*,*) '*INF* Using HEIDLER waveform'
+        ENDIF
+    ENDIF
 
-	IF (ALLOC_ERR_I .EQ. 0 ) THEN  
+	IF (ALLOC_ERR_I .EQ. 0 ) THEN 
+		IF (Imprimir_inf .EQV. .TRUE.) THEN
+		    write(*,*) '*INF* Calculating Icorr'
+        ENDIF 
       DO 1, i=1,nmaxi1
       
 		IF (ti .EQ. 0) THEN
@@ -771,7 +926,7 @@ IF (campo_distante .EQV. .FALSE.) THEN
 !*******************************************************
       DO 2, j=1,11*SIZE_2
 	    ti=ti+dti
-		IF (triangular .EQV. .FALSE.) THEN
+		IF (.NOT. triangular) THEN
 			!*****************************
 			! Using Heidler Function
 			!*****************************
@@ -826,11 +981,37 @@ IF (campo_distante .EQV. .FALSE.) THEN
 !     WRITE(UNIT=4,FMT='(1X,E12.3E2,E12.3E2)')(i02(j),i12(j), j=1,(SIZE_T+2))
 !	CLOSE(4)
 
+
+!*************************
+! READING EM FIELD FROM EXTERNAL FILE
+!*************************************
+IF (read_campo) THEN
+    write(kmax_s,'(I3)') kmax+1
+    FORMATO='(1X,'//kmax_s//'E16.7E4)'
+    OPEN(UNIT=2, FILE='vertical.txt', STATUS='UNKNOWN')
+    OPEN(UNIT=3, FILE='horizontal.txt', STATUS='UNKNOWN')
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+        write(*,*) '*INF* Total line division read=',kmax+1
+        write(*,*) '*INF* Total time steps read =',SIZE_T+2
+    ENDIF
+    READ(UNIT=2,FMT='(1X,2E16.7E4)')(Evini(j),Evfin(j), j=1,SIZE_T+2)
+    READ(UNIT=3,FMT=FORMATO)((Ex(cond,i,j),i=1,kmax+1),j=1,SIZE_T+2)
+
+    CLOSE (2)
+    CLOSE (3)
+ELSE
 !asignando valor de h para cada cálculo de la integral importante para Componente horizontal
+
 
    DO 51,k = 0,kmax
 	  DO 50,g=1,cond
-		h=hm(g)
+	    
+	    IF (status_perfil) THEN
+	        h=h_perfil(k,g)
+	    ELSE
+		    h=hm(g)
+		ENDIF
+		
 	  IF (XA.LT.XB) THEN
 		IF (k.EQ.0) THEN
 			r = DSQRT( ( XA ) ** 2 + (YR+Xi(g)) * (YR+Xi(g)) )
@@ -866,7 +1047,7 @@ IF (campo_distante .EQV. .FALSE.) THEN
 			r = DSQRT( ( XA - dx2 - (k-1) * dx ) ** 2 + (YR+Xi(g))  * (YR+Xi(g))  )
 			ang = ( (-XA + dx2 + (k-1) * dx) )/r	  
 		END IF
-		END IF
+	   END IF
 			t02=r/c; !initial time of the signal
 
 		!SIZE_1= (tmax1+t02-t0)/dt			!considering t0 for initiation
@@ -894,32 +1075,27 @@ IF (campo_distante .EQV. .FALSE.) THEN
 			IF (k.EQ.0) THEN
 				kcampo=1	!Identify if Ev will be calculated or not
 				CALL EMFIELD(SIZE_T+2, EZ, EH,ang,Icorr,tcorr,i02,i12,kcampo,t0_min)
-				!Evini(:)=EZ(:)
-				Evini(1:SIZE_ini)=EZ(1:SIZE_ini)
-				FORALL (i=1:SIZE3) 	Evini(SIZE_ini+i)=EZ(SIZE_ini+i*INT(scale_factor))			
+				Evini(:)=EZ(:)				
 			ELSEIF (k.EQ.kmax) THEN
 				kcampo=1
 				CALL EMFIELD(SIZE_T+2, EZ, EH,ang,Icorr,tcorr,i02,i12,kcampo,t0_min)
-!				Evfin(:)=EZ(:)
-				Evfin(1:SIZE_ini)=EZ(1:SIZE_ini)
-				FORALL (i=1:SIZE3) 	Evfin(SIZE_ini+i)=EZ(SIZE_ini+i*INT(scale_factor))			
-
+				Evfin(:)=EZ(:)
 			ELSE
 				kcampo=0
-				CALL EMFIELD(SIZE_T+2, EZ,EH,ang,Icorr,tcorr,i02,i12,kcampo,t0_min)
+				CALL EMFIELD(SIZE_T+2, Ev,EH,ang,Icorr,tcorr,i02,i12,kcampo,t0_min)
 				
 			ENDIF
 			
-			!Ex(g,k+1,:)=EH(:)
-			Ex(g,k+1,1:SIZE_ini)=EH(1:SIZE_ini)
-			FORALL (i=1:SIZE3) Ex(g,k+1,SIZE_ini+i)=EH(SIZE_ini+i*INT(scale_factor))
+			Ex(g,k+1,:)=EH(:)
 		  ENDIF
 			rant=r
 			angant=ang
 	
+ IF (Imprimir_inf) THEN
+    WRITE(*,*) '*INF* Point ',k+1, 'of ', kmax+1
+	write(*,*) '*INF* r=',r,' ang=', ang
+ENDIF
 
-! WRITE(*,*)'punto ',k+1, 'de ', kmax+1
-!	write(*,*) 'r=',r,' ang=', ang
 50    CONTINUE
 		rant=0.D0
 	!IF (k .EQ. int(.25*kmax) .OR. k .EQ. int(.5*kmax) 	&
@@ -928,8 +1104,14 @@ IF (campo_distante .EQV. .FALSE.) THEN
 	!END IF
 
 51 CONTINUE
-write(*,*)'*** EM Field calculated for line_',indarchiv
 
+    ENDIF
+
+    IF (Imprimir_inf .EQV. .TRUE.) THEN
+        write(*,*)'*INF* EM Field calculated for line_',indarchiv
+    ELSE
+	    write(*,'(A)', advance="no")'*'
+    ENDIF
 !****************************************
 !Routina para imprimir campo
 !***************************************
@@ -938,14 +1120,20 @@ ELSE
 	Evfin=0
 	Ex=0
 ENDIF
-Imprimir_campo=.TRUE.
+!READ EXTERNAL FILE WITH E_M FIELD
 
-IF (Imprimir_campo .EQV. .TRUE.) THEN
+
+IF (Imprimir_campo) THEN
 	IF (k.EQ.1 .OR. k .EQ. (kmax+1)) THEN
 		OPEN(UNIT=3, FILE='campo'//indarchiv//'.txt', ACCESS='SEQUENTIAL',STATUS='UNKNOWN')
-		WRITE(UNIT=3,FMT='(1X,E14.6E2,E14.6E2,E14.6E2,E14.6E2)')(Evini(j),Evfin(j),Ex(cond,1,j),Ex(cond,kmax+1,j), j=1,SIZE_T2)
+		WRITE(UNIT=3,FMT='(1X,E14.6E2,E14.6E2,E14.6E2,E14.6E2)')(Evini(j),Evfin(j),Ex(cond,1,j),Ex(cond,kmax+1,j), j=1,SIZE_T)
+!		OPEN(UNIT=3, FILE='campo'//indarchiv//'.txt', ACCESS='SEQUENTIAL',STATUS='UNKNOWN')
+
+!		WRITE(UNIT=3)((Ex(cond,i,j),i=1,kmax),j=1,SIZE_T+2)
 		CLOSE(3)
 	ENDIF
+ELSE
+	write(*,'(A)', advance="no")'e'
 ENDIF
 
 
@@ -953,7 +1141,12 @@ ENDIF
 t0=t0-t0_min
 
 open(UNIT = 16, FILE = ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1016,IOSTAT=ERRNUM)
-write(UNIT = 16) Evini,Evfin,Ex,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
+write(UNIT = 16) Evini, Evfin, Ex, D3i,  D5,  Zc_o,Zci_o,Mv1  ,Mv2  ,Mv3  ,Mi1  ,Mi2  ,Mi3  ,Mi4
+
+IF (Imprimir_inf) THEN
+    write(*,*) '*INF* Electromanetic field was sucsesfully saved'
+    write(*,*) '*INF* File: ',ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat'
+ENDIF
 close (UNIT = 16)
 
 open(UNIT = 17, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1017,IOSTAT=ERRNUM)
@@ -962,22 +1155,26 @@ close (UNIT = 17)
 				 
 1016 SELECT CASE(ERRNUM>0)
 		CASE (.TRUE.)
-			write(*,*)'Error grabando',casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
+			write(*,*)'*ERROR* saving',casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
 		END SELECT 
 1017 SELECT CASE(ERRNUM>0)
 		CASE (.TRUE.)
-			write(*,*)'Error grabando ','bas_'//casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
+			write(*,*)'*ERROR* saving ','bas_'//casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
 		END SELECT 
 
 
 
 ELSE
-write(*,*)'Reading from calculated EMField_',indarchiv
+IF (Imprimir_inf) THEN
+    write(*,*)'*INF* Reading from calculated EMField_',indarchiv
+ELSE
+	write(*,'(A)', advance="no")'.'
+ENDIF
 if(status_hm) THEN
 
 
 open(UNIT = 19, FILE = ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1019,IOSTAT=ERRNUM)
-write(UNIT = 19) Evini,Evfin,Ex,D3i,D5,Zc,Zci,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
+write(UNIT = 19) Evini,Evfin,Ex,D3i,D5,Zc_o,Zci_o,Mv1,Mv2,Mv3,Mi1,Mi2,Mi3,Mi4
 close (UNIT = 19)
 
 open(UNIT = 18, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'UNKNOWN',ERR=1018,IOSTAT=ERRNUM)
@@ -985,17 +1182,21 @@ write(UNIT = 18) v,zlam,Hcan,conductividad,o,e,dx,Ih1,Ih2,tao11,tao21,n1,n2,X0,Y
 close (UNIT = 18)
 1019 SELECT CASE(ERRNUM>0)
 		CASE (.TRUE.)
-			write(*,*)'Error grabando',casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
+			write(*,*)'*ERR* Error saving ',casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
 		END SELECT 
 1018 SELECT CASE(ERRNUM>0)
 		CASE (.TRUE.)
-			write(*,*)'Error grabando ','bas_'//casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
+			write(*,*)'*ERR* Error saving','bas_'//casename(1:LEN_TRIM(casename))//indarchiv//'.dat'
 		END SELECT 
 
 ENDIF
 
 
 
+ENDIF
+IF (Imprimir_inf) THEN
+    write(*,*) '*INF* Maximum number of lines: ',nlin
+    
 ENDIF
 !********************************
 ! Definiendo Variables del Model
@@ -1009,10 +1210,15 @@ Xvar(6)=conductividad
 Xvar(7)=t0     !calculation of initial time
 Xvar(8)=dx2
 Xvar(9)=nlin !enviando número máximo de líneas
+Xvar(10)=kmaxt
+Xvar(11)=cond_max
+IF (status_perfil.EQV. .TRUE.) THEN
+    Xvar(12)=1
+ELSE
+    Xvar(12)=0
+ENDIF
+
 !Definiendo Variables de Salida
-Xvar(12)=SIZE_T2
-Xvar(13)=SIZE_ini
-Xvar(14)=dt3
 ind_ini1=21
 Xvar(20)=ind_ini1
 Xvar(ind_ini1:ind_ini1-1+cond)=hm(:)
@@ -1046,8 +1252,8 @@ Xvar(ind_ini1:ind_ini1-1+cond)=hm(:)
 		
 !		End DO
 !	ENDDO
-DEALLOCATE (Zc,Zci,Ex,EH,EZ,Evfin,Evini,Cm,Lm,Ci,Li,LCi,LC,D1,D3i,D2,D4i, &
-	D5,Ro,Rf,hm,Xi,hm_s,Xi_s,Rm,D7,D6,D3,D4,STAT=ALLOC_ERR)
+DEALLOCATE (Zc,Zci,Ex,EH,EZ,Ev,Evfin,Evini,Cm,Lm,Ci,Li,LCi,LC,D1,D3i,D2, &
+	D5,Ro,Rf,hm,Xi,hm_s,Xi_s,Rm,D7,D6,D3,STAT=ALLOC_ERR)
 
 END SUBROUTINE
 
@@ -1066,7 +1272,7 @@ SUBROUTINE LINEPARAM(cond,Xi,hm,rc,Lm,Cm,Zc)
 
 
 	DO 2, i=1,cond
-		
+
       DO 1, j=1,cond
 
             s=((hm(i)-hm(j))**2+(Xi(i)-Xi(j))**2)**.5 !computing the space between conductors
@@ -1121,8 +1327,12 @@ CHARACTER (LEN=3) indarchiv
 	  ENDIF
 1010 SELECT CASE(ERRNUM>0)
 	    CASE (.TRUE.)
-			write(*,*) 'error leyendo linea_'//indarchiv//'.txt'
-			rc=-1
+			write(*,*) '******************************************************************'
+			write(*,*) '*ERR* Reading File: linea_'//indarchiv//'.txt'
+            write(*,*) '*ERR* ERRNUM=',ERRNUM
+            write(*,*) '*PROGRAM WILL STOP'
+            write(*,*) '******************************************************************'
+            STOP
 		ENDSELECT 
 
   CLOSE (UNIT=10)
@@ -1133,92 +1343,67 @@ END SUBROUTINE
 SUBROUTINE OPEN_MISC_FILE (v,zlam,Hcan,tmax1,SIZE_2,conductividad,o,e,dx,triangular,dist_camp)
 !DEC$ ATTRIBUTES, DLLEXPORT::OPEN_MISC_FILE
 
-DOUBLE PRECISION, INTENT(OUT) :: v,zlam,Hcan,tmax1,o,e,dx,dist_camp
-INTEGER, INTENT(OUT) :: conductividad, SIZE_2
-INTEGER :: i, ERRNUM
-DOUBLE PRECISION :: SIZE_2D
-LOGICAL, INTENT(OUT) :: triangular
+DOUBLE PRECISION v,zlam,Hcan,tmax1,o,e,dx,dist_camp
+INTEGER i, ERRNUM, SIZE_2,conductividad
+LOGICAL triangular
+
       OPEN (UNIT = 8, FILE = 'miscelaneo.txt', STATUS = 'OLD', ERR=1008,IOSTAT=ERRNUM)
-	  READ   (8, *) v
+      READ   (8, *) v
 	  READ   (8, *) zlam
       READ   (8, *) Hcan
       READ   (8, *) tmax1
       READ   (8, *) SIZE_2
-	  !SIZE_2=int(SIZED)
       READ   (8, *) conductividad
       READ   (8, *) o
       READ   (8, *) e
 	  READ   (8, *) dx
-	  
-	  ! IF (.NOT. EOF(8)) THEN
-	  !		
-	  !  	READ   (8, *) i ! waveform shape
-	  ! 	IF (.NOT. EOF(8)) THEN
-	  !			READ   (8, *) dist_camp  !Maximum distance for calculating EM Fields
-	  !		ELSE
-	  !			dist_camp=5000 !default value 5000m 
-	  !		ENDIF
-	  !	ELSE
-	  !		write(*,*) 'Usando formato de miscelaneo antiguo'
-	  !		i=0
-	  !		dist_camp=5000.
-	  !	END IF
+	  i=0
+	  dist_camp=5000
+	  READ   (8, *,end=990) i
+	  READ   (8, *,end=990) dist_camp 
 
-      nline = 0
-!	  DO while (.true.)
-		nline = nline + 1
-		!SELECT CASE(nline)
-		!	CASE(1)
-		!	READ   (8, *, end=1006) v
-		!	CASE(2)
-		!	READ   (8, *, end=1006) zlam
-		!	CASE(3)
-		!	READ   (8, *, end=1006) Hcan
-		!	CASE(4)
-		!	READ   (8, *, end=1006) tmax1
-		!	CASE(5)
-		!	READ   (8, *, end=1006) SIZE_2
-		!	CASE(6)
-		!	READ   (8, *, end=1006) Conductividad
-		!	CASE(7)
-		!	READ   (8, *, end=1006) o
-		!	CASE(9)
-		!	READ   (8, *, end=1006) e
-		!	CASE(10)
-	!DO while (.true.)
-			i = 0
-			dist_camp=5000			
-			READ   (8, *, end=1007) i ! waveform shape
-			READ   (8, *, end=1007) dist_camp  !Maximum distance for calculating EM Fields
-		!END SELECT 
-	  !ENDDO
-	  1006 continue
-	  write(*,*) 'Usando formato de miscelaneo antiguo'
-	  1007 continue
+990 CONTINUE
+	  
+	  
 
 	  IF (i .EQ. 1) THEN 
-	  	triangular=1
+		triangular=.TRUE.
 	  ELSE
-	  	triangular=0
+		triangular=.FALSE.
 	  ENDIF
 
 		
 1008 SELECT CASE(ERRNUM>0)
 	    CASE (.TRUE.)
-			write(*,*) 'error abriendo el archivo miscelaneo.txt error:',ERRNUM
-			write(*,*) 'Cargando valores por defecto'
-
+			write(*,*) '******************************************************************'
+			write(*,*) '*WARN* Error opening file miscelaneo.txt. Error_number:',ERRNUM
+			write(*,*) '*INF* Loading default values '
+			write(*,*) '******************************************************************'
+			write(*,*) '*********************'
+			write(*,*) '* v = 1.3D8	        *'	
+			write(*,*) '* zlam = 2000	    *'	
+			write(*,*) '* Hcan = 8000	    *'	
+			write(*,*) '* tmax1= 3.d-6      *'	
+			write(*,*) '* SIZE_2=30	        *'	
+			write(*,*) '* conductividad=1   *'	
+			write(*,*) '* o=1.D-3		    *'
+			write(*,*) '* e=10		        *'	
+			write(*,*) '* dx=10		        *'
+			write(*,*) '*********************'
+			
     		v = 1.3D8	!	- return stroke velocity
 	    	zlam = 2000		!- Atenuation for MTL model use 0 for TL model
 		    Hcan = 8000		!- Channel Height
     		tmax1= 3.d-6	!- simulation time for first window
 	    	SIZE_2=30		!- Number of samples for the second window
-		    Conductividad=1	!- Use 1(yes) to consider Conductivity
+		    conductividad=1	!- Use 1(yes) to consider Conductivity
     		o=1.D-3			!- Ground Conductivity
 	    	e=10			!- Relative ground permitivity
 		    dx=10			!- space division if doesn't fulfill Courant criteria it is atumatically computed
 !		----------------------------------------------------------------
-		END SELECT
+ 
+		END SELECT 
+
 CLOSE (UNIT=8)
 
 END SUBROUTINE
@@ -1232,6 +1417,7 @@ CHARACTER (LEN=5) ncase_s
 INTEGER ERRNUM
 
  OPEN (UNIT = 9, FILE = 'corr_'//ncase_s//'.txt', STATUS = 'OLD', ERR=1009,IOSTAT=ERRNUM)
+
       READ   (9, *) Ih1
       READ   (9, *) Ih2
       READ   (9, *) tao11
@@ -1245,9 +1431,51 @@ INTEGER ERRNUM
 
 1009 SELECT CASE(ERRNUM>0)
 	    CASE (.TRUE.)
-			write(*,*) 'error leyendo corr_'//ncase_s//'.txt'
+			write(*,*) '******************************************************************'
+			write(*,*) '*WARN* Error reading corr_'//ncase_s//'.txt file, Error_number=',ERRNUM
+			write(*,*) '*INF* All values will set in zero, EM field will not be calculated'
+			write(*,*) '*INF* EM field will be zero, then, just line model is used'
+			write(*,*) '******************************************************************'
+            Ih1=0
+            Ih2=0
+            tao11=0
+            tao21=0
+            tao12=0
+            tao22=0
+            n1=0
+            n2=0
+            X0=0
+            Y0=0    
 		END SELECT 
 
   CLOSE (UNIT=9)
+
+  END SUBROUTINE
+  
+ !***********************************************
+ ! opening and reading Profile file for each line
+ !***********************************************
+ 
+  SUBROUTINE OPEN_LINE_PROFILE(h_perfil,kmax,cond,indarchiv)
+  INTEGER kmax,cond,ERRNUM,i
+  DOUBLE PRECISION h_perfil(kmax,cond)
+    CHARACTER (LEN=3) indarchiv
+
+    !DEC$ ATTRIBUTES, DLLEXPORT::OPEN_LINE_PROFILE
+    OPEN (UNIT = 101, FILE = 'line_profile_'//indarchiv//'.txt', STATUS = 'OLD', ERR=1009,IOSTAT=ERRNUM)
+    DO i=1,kmax
+        READ   (101, *) h_perfil(i,:)
+    ENDDO
+    write(*,*) '*INF* line profile, read succesfully',h_perfil(kmax,:),' kmax=',kmax
+    
+	
+1009 SELECT CASE(ERRNUM>0)
+	    CASE (.TRUE.)
+			write(*,*) '******************************************************************'
+			write(*,*) '*WARN* Error reading line_profile_'//indarchiv//'.txt'
+            write(*,*) '*INF* height will be set in default values h=10'
+			write(*,*) '******************************************************************'
+			h_perfil(i,:)=10
+		END SELECT 
 
   END SUBROUTINE
