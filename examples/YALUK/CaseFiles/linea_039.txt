@@ -1,5 +1,9 @@
 0.005              Radio del conductor
--806   -4691            % Posición del extremo A en XA0   YA0
--854.1   -4920            % Posición del extremo B en XA0   YA0
+898.7   -4632            % Posición del extremo A en XA0   YA0
+928.3   -4772.6            % Posición del extremo B en XA0   YA0
 10   1            % Height [m] and Resistance [Ohm/km]
 0             % Relative position
+10   1            % Height [m] and Resistance [Ohm/km]
+1             % Relative position
+10   1            % Height [m] and Resistance [Ohm/km]
+2             % Relative position
