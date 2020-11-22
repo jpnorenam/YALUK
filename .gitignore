@@ -16,4 +16,4 @@ libubuntu64_old/
 *.pl4
 *.lis
 *.dat
-*.ylk
+results/
