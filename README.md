@@ -10,11 +10,12 @@ gcc g++ gfortran pkg-config make \
 libgl1 libxm4 libncurses5 dos2unix
 ```
 ### Build
+first let's build libyaluk.a
 ```
 cd source
 make
 ```
-
+Now let's build and link libapt
 ```
 cd ../libatp
 chmod 755 vardim vardimn
