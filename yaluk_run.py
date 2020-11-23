@@ -40,7 +40,7 @@ def parse_args():
                           required=True)
     args = parser.parse_args()
 
-    args.build = True if args.build == 'y'else False
+    args.build = True if args.build == 'y' else False
 
     return args
 
