@@ -15,7 +15,7 @@ First let's build libyaluk.a
 cd source
 make
 ```
-Now let's build and link libapt
+Now let's build and link libapt.a
 ```
 cd ../libatp
 chmod 755 vardim vardimn
@@ -23,6 +23,7 @@ dos2unix vardimn
 ./vardimn listsize.ylk
 make
 ```
+Test the `./tpbig` executable
 
 ### Python launcher
 In the root directory of the repository
