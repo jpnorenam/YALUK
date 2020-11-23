@@ -32,7 +32,7 @@ python yaluk_run.py -nLN450 -w$PWD/examples/LN450 -j4 -by -a$PWD/libatp -y$PWD/s
 ```
 Have a coffee :coffee:. In `$PWD/examples/LN450/results` you will find your results will be safe and sound.
 
-### Using Vagrant image
+### Using Vagrant
 There is a [VagrantFile] in the repository you can use
 ```
 vagrant up
