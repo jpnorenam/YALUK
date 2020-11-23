@@ -24,10 +24,22 @@ make
 ```
 
 ### Python launcher
+In the root directory of the repository
 ```
-sudo apt install python3 python3-pip
-pip install requirements.txt
+sudo apt install python3
+export PWD=$(pwd)
+python yaluk_run.py -nLN450 -w$PWD/examples/LN450 -j4 -by -a$PWD/libatp -y$PWD/source
 ```
+Have a coffee :coffee:. In `$PWD/examples/LN450/results` you will find your results will be safe and sound.
+
+### Using Vagrant image
+There is a [VagrantFile] in the repository you can use
+```
+vagrant up
+vagrant ssh
+cd /vagrant
+```
+and follow the python launcher steps.
 
 ## Copyright
 2020, Laboratorio de Gestión de Sistemas en Tiempo Real, Facultad de Minas, Universidad Nacional de Colombia
@@ -45,3 +57,4 @@ pip install requirements.txt
 [Universidad Nacional de Colombia](https://unal.edu.co/)
 
 [ATP]: https://www.emtp.org/index.php
+[VagrantFile]: https://www.vagrantup.com/docs/installation
