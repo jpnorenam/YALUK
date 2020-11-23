@@ -10,7 +10,7 @@ gcc g++ gfortran pkg-config make \
 libgl1 libxm4 libncurses5 dos2unix
 ```
 ### Build
-first let's build libyaluk.a
+First let's build libyaluk.a
 ```
 cd source
 make
