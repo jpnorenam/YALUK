@@ -5,8 +5,6 @@ import threading
 import pandas
 import time
 
-PWD = ""
-
 def parse_args():
     """Parse command line arguments"""
 
@@ -20,7 +18,7 @@ def parse_args():
                           required=True)
     required.add_argument('-w',
                           dest="workdir",
-                          help="location of the .atp files and the CaseFile folder",
+                          help="location of the .atp & .ini files and the CaseFile folder",
                           required=True)
     required.add_argument('-j',
                           dest="n_threads",
@@ -81,10 +79,9 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
         f.write(f_string)
     for n in range(3):
         bash_cmd = "{} BOTH {}.{}.atp s -r".format(tpbig, case, n)
-        process = subprocess.Popen(bash_cmd.split(), stdout=subprocess.PIPE)
+        process = subprocess.Popen(bash_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         #process = subprocess.run(bash_cmd.split(), stdout=subprocess.PIPE, capture_output=True, text=True, input=name)
-        #output, error = process.communicate(input=name) 
-        output, error = process.communicate() 
+        output, error = process.communicate(input=name) 
         with semaphore:
             # Escribo resultados
             # debug copy .pl4
