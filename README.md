@@ -30,7 +30,7 @@ sudo apt install python3
 export PWD=$(pwd)
 python yaluk_run.py -nLN450 -w$PWD/examples/LN450 -j4 -by -a$PWD/libatp -y$PWD/source
 ```
-This is an example, do `python yaluk_run.py -h` for some hints.
+This is an example, do `python yaluk_run.py -h` for some hints. \
 Have a coffee :coffee:. In `$PWD/examples/LN450/results` you will find your results safe and sound.
 
 ### Using Vagrant
