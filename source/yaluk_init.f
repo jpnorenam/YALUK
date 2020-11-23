@@ -249,7 +249,7 @@ CLOSE (UNIT=11)
 
 
 	OPEN (UNIT = 12, FILE = TRIM(archivo), STATUS = 'OLD', ERR=1012,IOSTAT=ERRNUM)
-		READ(12,*) casename !Case Name
+		!READ(12,*) casename !Case Name
 		write(*,*) 'please enter case files folder name:'
 		READ(*,*) casename !Case Name
 		READ(12,*) ncase    !Case Number

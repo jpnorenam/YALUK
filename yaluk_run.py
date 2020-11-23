@@ -1,3 +1,4 @@
+import multiprocessing
 import argparse, sys
 import os, shutil
 import subprocess
@@ -23,7 +24,8 @@ def parse_args():
     required.add_argument('-j',
                           dest="n_threads",
                           help="number of threads",
-                          required=True)
+                          required=True, type=int,
+                          choices=range(1, multiprocessing.cpu_count()))
     required.add_argument('-b',
                           dest="build",
                           help="build source before running the subprocess [y/n]",
@@ -50,9 +52,9 @@ def build_libyaluk(src):
 
 def build_libatp(src, pwd):
     os.chdir(src)
-    bash_cmd = """chmod 755 vardim vardimn & dos2unix vardimn & 
-               ./vardimn listsize.ylk & make & cp startup {}""".format(pwd)
-    process = subprocess.Popen(bash_cmd.split(), stdout=subprocess.PIPE)
+    bash_cmd = """chmod 755 vardim vardimn; dos2unix vardimn; 
+               ./vardimn listsize.ylk; make; cp startup {}""".format(pwd)
+    process = subprocess.Popen(bash_cmd, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     
 class ThreadPool(object):
@@ -73,7 +75,9 @@ class ThreadPool(object):
 def t_fun(pool, semaphore, curr_params, tpbig, case):
     name = threading.currentThread().getName()
     pool.makeActive(name)
+    print(os.get_cwd(), "./{}/corr_00001.txt".format(name))
     with open("./{}/corr_00001.txt".format(name), "r+") as f:
+        f_string = ""
         for val in curr_params:
             f_string += "{}\n".format(val)
         f.write(f_string)
@@ -81,7 +85,8 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
         bash_cmd = "{} BOTH {}.{}.atp s -r".format(tpbig, case, n)
         process = subprocess.Popen(bash_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         #process = subprocess.run(bash_cmd.split(), stdout=subprocess.PIPE, capture_output=True, text=True, input=name)
-        output, error = process.communicate(input=name) 
+        time.sleep(5)
+        output, error = process.communicate(input=bytes(name, 'utf-8')) 
         with semaphore:
             # Escribo resultados
             # debug copy .pl4
@@ -91,7 +96,7 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
 
 
 if __name__ == '__main__':
-    args = pfd_config.parse_args()
+    args = parse_args()
     
     if (args.build):
         build_libyaluk(args.libyaluk)
@@ -103,7 +108,8 @@ if __name__ == '__main__':
 
     # Create a directory with the case files for each thread
     for n in range(args.n_threads):
-        shutil.copytree("./CaseFiles", "./CaseFiles{}".format(n))
+        if not os.path.isdir("./CaseFiles{}".format(n)):
+            shutil.copytree("./CaseFiles", "./CaseFiles{}".format(n))
 
     # Read current params dataframe
     curr_df = pandas.read_csv("{}.csv".format(args.case_prefix), sep=';')
@@ -112,12 +118,14 @@ if __name__ == '__main__':
     pool = ThreadPool()
     semaphore = threading.Semaphore(3) # Thread safety when writing results
     while(i < len(curr_df.index)):
-        curr_params = curr_df[i]
+        curr_params = curr_df.iloc[i].values
+        print(i, curr_params)
+        print(pool.active)
         if pool.numActive() < args.n_threads:
             for j in range(args.n_threads):
-                if any("CaseFiles{}".format(j) in tn for tn in pool.active):
-                    break
                 t_name = "CaseFiles{}".format(j)
+                if not t_name in pool.active:
+                    break
             t = threading.Thread(target=t_fun, name=t_name,
                                  args=(pool, semaphore, curr_params, tpbig, args.case_prefix))
             t.start()
@@ -127,4 +135,5 @@ if __name__ == '__main__':
 
     # Clean up
     for n in range(args.n_threads):
-        shutil.rmtree("./CaseFiles{}".format(n))
+        if os.path.isdir("./CaseFiles{}".format(n)):
+            shutil.rmtree("./CaseFiles{}".format(n))
