@@ -45,7 +45,7 @@ remember to configure the following parameters according to your host machine.
 config.vm.provider "virtualbox" do |vb|
     vb.name = "YALUK"
     vb.gui = false
-	  vb.cpus = 5
+    vb.cpus = 5
     vb.memory = "6144"
   end
 ```
