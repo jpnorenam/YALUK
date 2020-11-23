@@ -1,10 +1,10 @@
 import multiprocessing
 import argparse, sys
-import os, shutil
+import os, glob, shutil
 import subprocess
 import threading
-import pandas
 import time
+
 
 def parse_args():
     """Parse command line arguments"""
@@ -73,27 +73,30 @@ class ThreadPool(object):
             return len(self.active)
 
 def t_fun(pool, semaphore, curr_params, tpbig, case):
+    start = time.time()
     name = threading.currentThread().getName()
     pool.makeActive(name)
-    print(os.get_cwd(), "./{}/corr_00001.txt".format(name))
-    with open("./{}/corr_00001.txt".format(name), "r+") as f:
+    with open("./{}/corr_00001.txt".format(name), "w") as f:
         f_string = ""
-        for val in curr_params:
+        curr_params = curr_params.split(';')
+        for val in curr_params[1:]:
             f_string += "{}\n".format(val)
         f.write(f_string)
-    for n in range(3):
+    print("[Thread {}] Running stroke No. {}.".format(name, curr_params[0]))
+    for n in range(1):
         bash_cmd = "{} BOTH {}.{}.atp s -r".format(tpbig, case, n)
         process = subprocess.Popen(bash_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        #process = subprocess.run(bash_cmd.split(), stdout=subprocess.PIPE, capture_output=True, text=True, input=name)
-        time.sleep(5)
-        output, error = process.communicate(input=bytes(name, 'utf-8')) 
+        output, error = process.communicate(input=bytes(name, 'utf-8'))
+        shutil.copyfile("./{}/{}.{}.pl4".format(name, case, n),
+                        "./results/stroke{}.{}.pl4".format(curr_params[0], n))
+        # Extraer datos del .LIS
         with semaphore:
-            # Escribo resultados
-            # debug copy .pl4
+            # Escribir en un csv unificado (hacerlo thread safe!)
             time.sleep(0.1)
-    # Erase .dat
+    end = time.time()
+    print("[Thread {}] Completed stroke No. {} in {} s.".format(name, curr_params[0], end - start))
+    #os.remove("./{}/status_file.ylk".format(name))
     pool.makeInactive(name)
-
 
 if __name__ == '__main__':
     args = parse_args()
@@ -112,26 +115,37 @@ if __name__ == '__main__':
             shutil.copytree("./CaseFiles", "./CaseFiles{}".format(n))
 
     # Read current params dataframe
-    curr_df = pandas.read_csv("{}.csv".format(args.case_prefix), sep=';')
-
-    i = 0 # Stroke current params dataframe entry
-    pool = ThreadPool()
-    semaphore = threading.Semaphore(3) # Thread safety when writing results
-    while(i < len(curr_df.index)):
-        curr_params = curr_df.iloc[i].values
-        print(i, curr_params)
-        print(pool.active)
-        if pool.numActive() < args.n_threads:
-            for j in range(args.n_threads):
-                t_name = "CaseFiles{}".format(j)
-                if not t_name in pool.active:
-                    break
-            t = threading.Thread(target=t_fun, name=t_name,
-                                 args=(pool, semaphore, curr_params, tpbig, args.case_prefix))
-            t.start()
-            i+=1
-        else:
-            time.sleep(0.5)
+    #curr_df = pandas.read_csv("{}.csv".format(args.case_prefix), sep=';')
+    with open("{}.csv".format(args.case_prefix), 'r') as db:
+        db.readline()
+        eof = False # Stroke current params dataframe entry
+        pool = ThreadPool()
+        semaphore = threading.Semaphore(3) # Thread safety when writing results
+        busy = 0
+        while(not eof):
+            if pool.numActive() < args.n_threads:
+                busy = 0
+                curr_params = db.readline()
+                if not curr_params:
+                    eof = True
+                for j in range(args.n_threads):
+                    t_name = "CaseFiles{}".format(j)
+                    if not t_name in pool.active:
+                        break
+                t = threading.Thread(target=t_fun, name=t_name,
+                                     args=(pool, semaphore, curr_params, tpbig, args.case_prefix))
+                t.start()             
+            else:
+                if (busy == 0):
+                    print("[All threads] busy", end = '')
+                    busy += 1
+                if (busy > 5):
+                    print(".")
+                    busy = 0
+                else:
+                    print(".", end = '')
+                    busy += 1
+                time.sleep(2)
 
     # Clean up
     for n in range(args.n_threads):

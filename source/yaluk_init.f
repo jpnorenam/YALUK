@@ -249,9 +249,7 @@ CLOSE (UNIT=11)
 
 
 	OPEN (UNIT = 12, FILE = TRIM(archivo), STATUS = 'OLD', ERR=1012,IOSTAT=ERRNUM)
-		!READ(12,*) casename !Case Name
-		write(*,*) 'please enter case files folder name:'
-		READ(*,*) casename !Case Name
+		READ(12,*) casename !Case Name
 		READ(12,*) ncase    !Case Number
 		READ(12,*) nlin ! Maximum number of Lines
 		READ(12,*) cond_max     ! Maximum number of conductors
@@ -268,6 +266,9 @@ CLOSE (UNIT=11)
     !****************************
     ! CONFIGURATION MISC. FILE
     !******************************
+
+	WRITE(*,*) 'please enter case files folder name:'
+	READ(*,*) casename !Case Name
 
     OPEN (UNIT = 21, FILE = 'yaluk_status.ini', FORM='FORMATTED', STATUS = 'OLD', ERR=9011,IOSTAT=ERRNUM2)
         READ   (21, *) Imprimir_campo  !Identify if Electromagnetic field will be printed
