@@ -7,10 +7,13 @@ in transmission/distribution due to lightning activity.
 ```
 sudo apt install \
 gcc g++ gfortran pkg-config make \
-libgl1 libxm4 libncurses5 dos2unix \
+libgl1 libxm4 libncurses5 dos2unix
 ```
 ### Build
-`cd source & make`
+```
+cd source
+make
+```
 
 ```
 cd ../libatp
@@ -22,7 +25,7 @@ make
 
 ### Python launcher
 ```
-sudo apt install python3 pip3
+sudo apt install python3 python3-pip
 pip install requirements.txt
 ```
 
