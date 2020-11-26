@@ -84,7 +84,7 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
         f.write(f_string)
     print("[Thread {}] Running stroke No. {}.".format(name, curr_params[0]))
     for n in range(1):
-        bash_cmd = "{} BOTH {}.{}.atp s -r".format(tpbig, case, n)
+        bash_cmd = "{} DISK {}.{}.atp s -r".format(tpbig, case, n)
         process = subprocess.Popen(bash_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         output, error = process.communicate(input=bytes(name, 'utf-8'))
         shutil.copyfile("./{}/{}.{}.pl4".format(name, case, n),
