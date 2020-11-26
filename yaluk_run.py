@@ -163,5 +163,5 @@ if __name__ == '__main__':
          
         # Clean up
         for n in range(args.n_threads):
-        if os.path.isdir("./CaseFiles{}".format(n)):
-            shutil.rmtree("./CaseFiles{}".format(n))
+            if os.path.isdir("./CaseFiles{}".format(n)):
+                shutil.rmtree("./CaseFiles{}".format(n))
