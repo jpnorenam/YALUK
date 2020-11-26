@@ -113,9 +113,12 @@ if __name__ == '__main__':
     for n in range(args.n_threads):
         if not os.path.isdir("./CaseFiles{}".format(n)):
             shutil.copytree("./CaseFiles", "./CaseFiles{}".format(n))
+            
+    # If results folder doesn't exist, then create it.   
+    if not os.path.isdir("./results"): 
+        os.makedirs("./results")
 
     # Read current params dataframe
-    #curr_df = pandas.read_csv("{}.csv".format(args.case_prefix), sep=';')
     with open("{}.csv".format(args.case_prefix), 'r') as db:
         db.readline()
         eof = False # Stroke current params dataframe entry
