@@ -100,13 +100,11 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
     pool.makeInactive(name)
 
 def signal_handler(sig, frame):
-    print("Cleaning up the mess...)
-    
+    print("Cleaning up the mess...")
     # Erase folders
     for n in range(args.n_threads):
         if os.path.isdir("./CaseFiles{}".format(n)):
             shutil.rmtree("./CaseFiles{}".format(n))
-          
     print("Goodbye!")
     sys.exit(0)
     
