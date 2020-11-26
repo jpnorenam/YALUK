@@ -160,3 +160,8 @@ if __name__ == '__main__':
                     print(".", end = '')
                     busy += 1
                 time.sleep(2)
+         
+        # Clean up
+        for n in range(args.n_threads):
+        if os.path.isdir("./CaseFiles{}".format(n)):
+            shutil.rmtree("./CaseFiles{}".format(n))
