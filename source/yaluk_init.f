@@ -391,7 +391,9 @@ CLOSE (UNIT=11)
 
 		END SELECT
 ERRNUM=0
-
+	IF (Imprimir_inf) THEN
+	write(*,*) '*INF* Initializing Lines',indarchiv
+      ENDIF
 
 
 
@@ -430,9 +432,9 @@ IF (dt .EQ. dt_s .AND. tmax .EQ. tmax_s) THEN
 	status_bas=.TRUE.
 	open(UNIT = 14, FILE = 'bas_'//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat', FORM='UNFORMATTED', STATUS = 'OLD',ERR=1014,IOSTAT=ERRNUM)
 	read(UNIT = 14, ERR=1021,IOSTAT=ERRNUM_2) v_s,zlam_s,Hcan_s,Conductividad_s,o_s,e_s,dx_s,Ih1_s,Ih2_s,tao11_s,tao21_s,n1_s,n2_s,X0_s,Y0_s,rc_s,YA0_s,YB0_s,XA0_s,XB0_s,hm_s,Xi_s,kmax,t0
-	IF (Imprimir_inf .EQV. .TRUE.) THEN
+	IF (Imprimir_inf) THEN
 	write(*,*) '*INF* Loading database of previous case: ',indarchiv
-    ENDIF
+      ENDIF
 	close (UNIT = 14)
 	
 1014 SELECT CASE(ERRNUM>0)
@@ -1107,7 +1109,7 @@ ENDIF
 
     ENDIF
 
-    IF (Imprimir_inf .EQV. .TRUE.) THEN
+    IF (Imprimir_inf) THEN
         write(*,*)'*INF* EM Field calculated for line_',indarchiv
     ELSE
 	    write(*,'(A)', advance="no")'*'
@@ -1224,7 +1226,7 @@ Xvar(20)=ind_ini1
 Xvar(ind_ini1:ind_ini1-1+cond)=hm(:)
 
 		ind_ini=ind_ini1+cond
-
+Xvar(50)=merge(1.0,0.,campo_distante);  !Variable of the distant lightning
 
 !***********************************************************
 !	DO i=1,cond
