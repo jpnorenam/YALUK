@@ -52,8 +52,8 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.name = "YALUK"
     vb.gui = false
-  	  vb.cpus = 2
-      vb.memory = "4096"
+	  vb.cpus = 5
+    vb.memory = "6144"
   end
   #
   # View the documentation for the provider you are using for more
@@ -65,12 +65,15 @@ Vagrant.configure("2") do |config|
   	cat /home/vagrant/.ssh/vagrant_ssh_pub_key >> /home/vagrant/.ssh/authorized_keys
   	rm /home/vagrant/.ssh/vagrant_ssh_pub_key
     apt-get update -y
+    apt-get install -y \
+    gcc g++ gfortran pkg-config make \
+    libgl1 libxm4 libncurses5 dos2unix \
+    python3 python3-pip
   SHELL
 
-  # provision VILLASnode installation
-  config.vm.provision "ansible_local" do |ansible|
-    ansible.playbook = "./ansible/playbook.yml"
-    ansible.limit = "all,localhost"
-  end
+  #config.vm.provision "ansible_local" do |ansible|
+  #  ansible.playbook = "./ansible/playbook.yml"
+  #  ansible.limit = "all,localhost"
+  #end
 
 end

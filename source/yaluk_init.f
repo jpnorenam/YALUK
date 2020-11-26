@@ -267,6 +267,9 @@ CLOSE (UNIT=11)
     ! CONFIGURATION MISC. FILE
     !******************************
 
+	WRITE(*,*) 'please enter case files folder name:'
+	READ(*,*) casename !Case Name
+
     OPEN (UNIT = 21, FILE = 'yaluk_status.ini', FORM='FORMATTED', STATUS = 'OLD', ERR=9011,IOSTAT=ERRNUM2)
         READ   (21, *) Imprimir_campo  !Identify if Electromagnetic field will be printed
         READ   (21, *) Imprimir_inf    !!Identify if information of the process will be printed
