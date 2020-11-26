@@ -95,7 +95,7 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
             time.sleep(0.1)
     end = time.time()
     print("[Thread {}] Completed stroke No. {} in {} s.".format(name, curr_params[0], end - start))
-    #os.remove("./{}/status_file.ylk".format(name))
+    os.remove("./{}/status_file.ylk".format(name))
     pool.makeInactive(name)
 
 if __name__ == '__main__':
