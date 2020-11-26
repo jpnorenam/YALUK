@@ -3,6 +3,7 @@ import argparse, sys
 import os, glob, shutil
 import subprocess
 import threading
+import signal
 import time
 
 
@@ -98,7 +99,19 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
     os.remove("./{}/status_file.ylk".format(name))
     pool.makeInactive(name)
 
+def signal_handler(sig, frame):
+    print("Cleaning up the mess...)
+    
+    # Erase folders
+    for n in range(args.n_threads):
+        if os.path.isdir("./CaseFiles{}".format(n)):
+            shutil.rmtree("./CaseFiles{}".format(n))
+          
+    print("Goodbye!")
+    sys.exit(0)
+    
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
     args = parse_args()
     
     if (args.build):
@@ -149,8 +162,3 @@ if __name__ == '__main__':
                     print(".", end = '')
                     busy += 1
                 time.sleep(2)
-
-    # Clean up
-    for n in range(args.n_threads):
-        if os.path.isdir("./CaseFiles{}".format(n)):
-            shutil.rmtree("./CaseFiles{}".format(n))
