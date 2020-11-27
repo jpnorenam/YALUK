@@ -17,7 +17,7 @@
 9 NFORS2  NIOMAX    MRGN  LINLIM   MPAGE  MODE28  KPGRID KPEN(1) KPEN(2) KPEN(3)
       30      10       2     100       0       1       3      12      10      11
 10 ..(4)  KOMLEV   NSMTH  MODSCR  KOLALP  MAXFLG  LIMCRD  NOBLAN  MOUSET  NOTPPL
-      14      -1      50       2       5       1   10000       0       0       1
+      14      -1      50       2       5       1  100000       0       0       1
 1 NOCOMM  NOHELP  NEWPL4  JDELAY  NOTMAX  NSMPLT  KOLWID  KOLSEP  JCOLU1  KSLOWR
        0       0       0       0       0      50      11       1       0      25
 2 KSYMBL  NOBACK  KOLEXM    LTEK   NCUT1   NCUT2  INCHPX  INCHPY  NODPCX  LCHLIM

@@ -83,7 +83,8 @@ DOUBLE PRECISION, ALLOCATABLE :: Mi1_o(:,:,:),Mi2_o(:,:,:),Mi3_o(:,:,:),Mi4_o(:,
         D3i_o(:,:,:),D5_o(:,:,:),Zc_o(:,:,:),Zci_o(:,:,:) !Matrices multiplican tensiones y corrientes para cada linea
 
 LOGICAL(4) status_perfil,imprimir_inf
-
+      LOGICAL near_EM_field
+      INTEGER n_Vp   ! paso para recortar el efecto de de la impedancia transitoria.
 	CHARACTER(LEN=3) indarchiv
 	CHARACTER (LEN=5) ncase_s
 	CHARACTER(LEN=30) casename
@@ -108,15 +109,16 @@ LOGICAL(4) status_perfil,imprimir_inf
 	conductividad=Xvar(6)
 	t0=Xvar(7)
 	dx2=Xvar(8)	
-    IF(Xvar(12).EQ.1) THEN
+      IF(Xvar(12).EQ.1) THEN
         status_perfil=.TRUE.
         p_kmax=kmax
-    ELSE
+      ELSE
         status_perfil=.FALSE.
         p_kmax=1
-    ENDIF
+      ENDIF
 	!Loading Data from the ATP - case
 	dt=Xdata(1)             !delta time
+      
 	tmax=Xdata(2)           !maximum simulation time
 	cond=nint(Xdata(3))     ! number of conductors for this line
 	num_lin=nint(Xdata(4))  !current line number
@@ -129,10 +131,14 @@ LOGICAL(4) status_perfil,imprimir_inf
 	kmaxt=Xvar(10)	        ! kmaxt; número máximo de divisiones en las líneas
 	IF (Xvar(9).NE.0) THEN
 	    max_lin=Xvar(9)	    ! max_lin: numero máxmio de líneas
-    ELSE
+      ELSE
         max_lin=40          !número de líneas por defecto
-    END IF
-    cond_max=Xvar(11)       !máximo numero de conductores
+      END IF
+     cond_max=Xvar(11)       !máximo numero de conductores
+      
+      near_EM_field= (Xvar(50).EQ.0)
+
+      n_Vp=nint(2e-5/dt);
 !******************************************************************************
 !******************************************************************************
 	100 FORMAT(I3.3) 
@@ -154,7 +160,7 @@ LOGICAL(4) status_perfil,imprimir_inf
 		    write(*,*) '*INF* num_lin ',num_lin,' time=',t,'ALLOC_ERR and 1',ALLOC_ERR,ALLOC_ERR1
             write(*,*) '*INF* cond_max',cond_max,' max_lin',max_lin,' SIZE',SIZE,'kmaxt',kmaxt,'t',t,'n',n
 		    
-		    pause '*ERROR* Allocating - overflow array'
+		    write(*,*) '*ERROR* Allocating - overflow array'
 		    STOP
 		ENDIF
 
@@ -200,7 +206,7 @@ h(1:cond)=Xvar(ind_ini1:ind_ini1-1+cond)
 IF (t.EQ.0) THEN
 	VR(:,:,num_lin)=0.D0
 ELSE
-	IF (conductividad .EQ. 1) THEN
+	IF (conductividad .EQ. 1 .AND. near_EM_field) THEN
 		ind_ini=ind_ini1+7*cond+6*cond*cond
 			DO g=1,cond
 				taog=h(g)*h(g)*mu*o
@@ -228,7 +234,7 @@ IF (n .LE. 1) THEN
             
 	OPEN (UNIT = 11, FILE = 'status_file.ylk', FORM='UNFORMATTED', STATUS = 'OLD', ERR=1011,IOSTAT=ERRNUM)
 	READ (UNIT=11) dt_s,tmax_s,ncase_s,casename,t0_min,kmaxt,cond_max,imprimir_inf
-    IF (Imprimir_inf .EQV. .TRUE.) THEN
+      IF (Imprimir_inf) THEN
 			write(*,*)'*INF* Initializing execution subroutine n=',n !Information
 			write(*,*)'*INF* Line nunmber: ',num_lin
 	ENDIF		
@@ -247,7 +253,7 @@ IF (n .LE. 1) THEN
 !	write(*,*) 'Ex2',DIMEN
 
 	READ(12) Evini2,Evfin2,Ex2,D3i_o,D5_o,Zc_o,Zci_o,Mv1_o,Mv2_o,Mv3_o,Mi1_o,Mi2_o,Mi3_o,Mi4_o
-    IF (Imprimir_inf .EQV. .TRUE.) THEN
+      IF (Imprimir_inf) THEN
 			write(*,*)'*INF* Reading calculated data from ='//ncase_s//'_'//casename(1:LEN_TRIM(casename))//'_'//indarchiv//'.dat' !Information
 	ENDIF		
 
@@ -395,7 +401,7 @@ IF (status_perfil.EQV. .TRUE.) THEN
 	Mi3(1:cond,1:cond)=Mi3c(1:cond,1:cond,num_lin,k)
 	Mi4(1:cond,1:cond)=Mi4c(1:cond,1:cond,num_lin,k)
 
-ENDIF
+      ENDIF
 
 
 !		A1(:,1)=-dt*(Iant(:,k+1,num_lin)-Iant(:,k-1,num_lin))/(dx+dx)
@@ -453,12 +459,20 @@ ENDIF
 			
 	!Calculating Ground conductivity influence on the Line
 	!--------------------------------------------------------
-	IF (conductividad .EQ.1) THEN
+	IF (conductividad .EQ.1 .AND. near_EM_field) THEN
 			Vpa(1:cond,k,num_lin)=Vp(1:cond,k,num_lin)
 			dI(n,1:cond,k,num_lin)=(Ii(1:cond,k)-Iant(1:cond,k,num_lin))
 			dI_p(1:n,1:cond)=dI(1:n,1:cond,k,num_lin)
 			DO g=1,cond
-				Vp(g:g,k:k,num_lin)=matmul(VR(g:g,1:n,num_lin),dI_p(1:n,g:g))-VR(g,1,num_lin)*dI_p(1,g)/2-VR(g,n,num_lin)*dI_p(n,g)/2
+				
+                  
+                  !Vp(g:g,k:k,num_lin)=matmul(VR(g:g,n_Vp-n:n,num_lin),dI_p(n_Vp-n:n,g:g))-VR(g,1,num_lin)*dI_p(1,g)/2-VR(g,n,num_lin)*dI_p(n,g)/2
+                  
+                      
+                      Vp(g:g,k:k,num_lin)=matmul(VR(g:g,1:n,num_lin),dI_p(1:n,g:g))-VR(g,1,num_lin)*dI_p(1,g)/2-VR(g,n,num_lin)*dI_p(n,g)/2
+                  
+                  
+			
 			END DO
 	ELSE
 			Vpa(1:cond,k,num_lin)=0.D0
