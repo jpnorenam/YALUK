@@ -84,13 +84,44 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
             f_string += "{}\n".format(val)
         f.write(f_string)
     print("[Thread {}] Running stroke No. {}.".format(name, curr_params[0]))
-    for n in range(1):
-        bash_cmd = "{} DISK {}.{}.atp s -r".format(tpbig, case, n)
+    for n in range(2):
+        # Renaming file atp to get a .lis of the stroke
+        try:
+            shutil.copyfile("./{}.{}.atp".format(case, n),
+                        "./{}.{}.s{}.atp".format(case, n,curr_params[0]))
+        except:
+            print("* Could not copy atp file *stroke:{} case:{}*".format(curr_params[0], n))
+
+        bash_cmd = "{} DISK {}.{}.s{}.atp s -r".format(tpbig, case, n,curr_params[0])
         process = subprocess.Popen(bash_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         output, error = process.communicate(input=bytes(name, 'utf-8'))
-        shutil.copyfile("./{}/{}.{}.pl4".format(name, case, n),
+        try:
+            shutil.copyfile("./{}/{}.{}.s{}.pl4".format(name, case, n,curr_params[0]),
                         "./results/stroke{}.{}.pl4".format(curr_params[0], n))
+            try:
+                os.remove("./{}/{}.{}.s{}.pl4".format(name, case, n,curr_params[0]))
+            except:
+                print("Couldn't remove pl4 files *stroke:{} case:{}*".format(curr_params[0], n))
+        except:
+            print("* No pl4 file *stroke:{} case:{}*".format(curr_params[0], n))
+        
         # Extraer datos del .LIS
+        try:
+            shutil.copyfile("./{}.{}.s{}.lis".format(case, n,curr_params[0]),
+                        "./results/stroke{}.{}.lis".format(curr_params[0], n))
+            try:
+                
+                os.remove("./{}.{}.s{}.lis".format(case, n,curr_params[0]))
+                os.remove("./{}.{}.s{}.atp".format(case, n,curr_params[0]))
+                os.remove("./{}.{}.s{}.dbg".format(case, n,curr_params[0]))
+                os.remove("./{}.{}.s{}.pl4 ".format(case, n,curr_params[0]))
+                print("Removing simulation files *Stroke:{}.Case{} *".format(curr_params[0], n))
+            except:
+                print("Couldn't remove simulation files *./\'{}.{}.s{}.pl4 \'*".format(curr_params[0], n))
+        except:
+            print("* No lis file *stroke:{} case:{}*".format(curr_params[0], n))
+        
+        
         with semaphore:
             # Escribir en un csv unificado (hacerlo thread safe!)
             time.sleep(0.1)

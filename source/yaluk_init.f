@@ -195,7 +195,7 @@ EXTERNAL IPULSE,BESSELI0,BESSELI1,comparar
 
 archivo='yaluk.ini'
 ERRNUM=0
-
+Imprimir_campo=.FALSE.
 !****************************
 !* STATUS_FILE.YLK
 !* FILE READ for identify simulation parameters between lines
@@ -292,7 +292,7 @@ CLOSE (UNIT=11)
 	!status = CHANGEDIRQQ(dir(1:length)//'\'//casename(1:LEN_TRIM(casename)))
 	write(*,*) '*INF* Trying to open: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))	
 	CALL CHDIR(TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)
-		IF (status_int .NE. 0) THEN
+		IF (status_int .EQ. 0) THEN
 				!dir = FILE$CURDRIVE
 				!length = GETDRIVEDIRQQ(dir)
 			CALL GETCWD(dir, status_int)
@@ -302,7 +302,7 @@ CLOSE (UNIT=11)
 			write(*,*) 'Trying to create: ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))	
 			CALL SYSTEM( 'mkdir ' //TRIM(dir)//'/'//casename(1:LEN_TRIM(casename)), status_int)			
 			
-			IF (status_int .NE. 0) THEN
+			IF (status_int .EQ. 0) THEN
 				write(*,*) ' Directory for cases was created ',TRIM(dir)//'/'//casename(1:LEN_TRIM(casename))
 				write(*,*) '**************************************************************'
 				write(*,*) '*  PLEASE PUT THE LINE AND MISCELANEO FILES IN THIS DIRECTORY*'
