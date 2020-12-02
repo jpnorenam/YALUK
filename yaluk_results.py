@@ -17,6 +17,7 @@ def parse_args():
                           dest="workdir",
                           help="path to directory of the .lis results files",
                           required=True)
+    args = parser.parse_args()
     return args
 
 def read_lis(file, case_name):
