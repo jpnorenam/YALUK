@@ -51,15 +51,15 @@ def read_lis(file, case_name):
 
 
 if __name__ == '__main__':
-    #args = parse_args()
+    args = parse_args()
 
-    workdir = "examples/C_LN450/results"
+    #workdir = "examples/C_LN450/results"
 
-    if not os.path.isdir(workdir):
+    if not os.path.isdir(args.workdir):
         print("The directory doesn't exists, goodbye!")
         sys.exit(0)
 
-    res_file = '{}/results.csv'.format(workdir)
+    res_file = '{}/results.csv'.format(args.workdir)
 
     append_df = False
     if os.path.isfile(res_file):
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
         signal.signal(signal.SIGINT, signal_handler)
 
-    lis_files = glob.glob('{}/*.lis'.format(workdir))
+    lis_files = glob.glob('{}/*.lis'.format(args.workdir))
 
     init = True
     for file in lis_files:
