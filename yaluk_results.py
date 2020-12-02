@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     #workdir = "examples/C_LN450/results"
 
-    if not os.path.isdir(workdir):
+    if not os.path.isdir(args.workdir):
         print("The directory doesn't exists, goodbye!")
         sys.exit(0)
 
