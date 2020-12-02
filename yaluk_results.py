@@ -1,5 +1,4 @@
-import os
-import glob
+import os, sys, glob
 import signal
 import argparse
 import subprocess
@@ -74,11 +73,11 @@ if __name__ == '__main__':
         df = df.set_index(df.columns[0])
         append_df = True
 
-        def signal_handler(sig, frame):
-            df.to_csv(res_file)
-            sys.exit(0)
+    def signal_handler(sig, frame):
+        df.to_csv(res_file)
+        sys.exit(0)
 
-        signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     lis_files = glob.glob('{}/*.lis'.format(args.workdir))
 
@@ -92,10 +91,10 @@ if __name__ == '__main__':
             init = False
         
         elif case_name not in df:
-            df.append(read_lis(file, case_name))
+            df = df.append(read_lis(file, case_name))
 
         lis_count += 1
-        progress_bar(lis_count, len(lis_files), prefix = '[yaluk results] progress:', suffix = 'completed', length = 50)
+        progress_bar(lis_count, len(lis_files), prefix = '[yaluk results {}] progress:'.format(case_name), suffix = 'completed', length = 50)
 
         if not lis_count % 25:
             df.to_csv(res_file)
