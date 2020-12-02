@@ -1,5 +1,6 @@
 # Visual studio
 .vs/
+.vscode/
 
 # Vagrant
 .vagrant/
