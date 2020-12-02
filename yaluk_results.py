@@ -17,6 +17,7 @@ def parse_args():
                           dest="workdir",
                           help="path to directory of the .lis results files",
                           required=True)
+    args = parser.parse_args()
     return args
 
 def read_lis(file, case_name):
@@ -48,18 +49,24 @@ def read_lis(file, case_name):
 
     return pd.DataFrame([max_var.tolist()], columns=nodes_filled.tolist(), index=[case_name])
 
-
+def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
+    if iteration == total: 
+        print()
 
 if __name__ == '__main__':
-    #args = parse_args()
+    args = parse_args()
 
-    workdir = "examples/C_LN450/results"
+    #workdir = "examples/C_LN450/results"
 
     if not os.path.isdir(workdir):
         print("The directory doesn't exists, goodbye!")
         sys.exit(0)
 
-    res_file = '{}/results.csv'.format(workdir)
+    res_file = '{}/results.csv'.format(args.workdir)
 
     append_df = False
     if os.path.isfile(res_file):
@@ -73,9 +80,10 @@ if __name__ == '__main__':
 
         signal.signal(signal.SIGINT, signal_handler)
 
-    lis_files = glob.glob('{}/*.lis'.format(workdir))
+    lis_files = glob.glob('{}/*.lis'.format(args.workdir))
 
     init = True
+    lis_count = 0
     for file in lis_files:
         case_name = file.split('/')[-1][:-4]
 
@@ -85,5 +93,11 @@ if __name__ == '__main__':
         
         elif case_name not in df:
             df.append(read_lis(file, case_name))
-            
+
+        lis_count += 1
+        progress_bar(lis_count, len(lis_files), prefix = '[yaluk results] progress:', suffix = 'completed', length = 50)
+
+        if not lis_count % 25:
+            df.to_csv(res_file)
+
     df.to_csv(res_file)
