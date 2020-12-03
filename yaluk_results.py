@@ -59,8 +59,6 @@ def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, lengt
 if __name__ == '__main__':
     args = parse_args()
 
-    #workdir = "examples/C_LN450/results"
-
     if not os.path.isdir(args.workdir):
         print("The directory doesn't exists, goodbye!")
         sys.exit(0)
@@ -91,7 +89,10 @@ if __name__ == '__main__':
             init = False
         
         elif case_name not in df:
-            df = df.append(read_lis(file, case_name))
+            try:
+                df = df.append(read_lis(file, case_name))
+            except:
+                print("[yaluk results] ERROR: skipping {}.lis, processing format failed.".format(case_name))
 
         lis_count += 1
         progress_bar(lis_count, len(lis_files), prefix = '[yaluk results {}] progress:'.format(case_name), suffix = 'completed', length = 50)
