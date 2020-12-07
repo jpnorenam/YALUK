@@ -6,5 +6,5 @@
 0.00E0   % Tiempo de Cola 2da Funcion Heidler..........tao22
 4.00E0   % Constante 1era funcion Heidler..............n1
 0   % Constante 2da funcion Heidler..............n2
-4908.231033882   % Posición en X del Rayo..........X0
--3328.0551666844   % Posición en Y del Rayo..........Y0
+-6040   % Posición en X del Rayo..........X0
+6816.0551666844   % Posición en Y del Rayo..........Y0

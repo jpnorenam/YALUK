@@ -53,7 +53,7 @@ Vagrant.configure("2") do |config|
     vb.name = "YALUK"
     vb.gui = false
 	  vb.cpus = 6
-    vb.memory = "6144"
+    vb.memory = "10240"
   end
   #
   # View the documentation for the provider you are using for more

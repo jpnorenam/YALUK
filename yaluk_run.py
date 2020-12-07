@@ -126,9 +126,12 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
             # Escribir en un csv unificado (hacerlo thread safe!)
             time.sleep(0.1)
     end = time.time()
-    print("[Thread {}] Completed stroke No. {} in {} s.".format(name, curr_params[0], end - start))
-    os.remove("./{}/status_file.ylk".format(name))
-    pool.makeInactive(name)
+    try:
+        print("[Thread {}] Completed stroke No. {} in {} s.".format(name, curr_params[0], end - start))
+        os.remove("./{}/status_file.ylk".format(name))
+        pool.makeInactive(name)
+    except:
+        print("Couldn't remove ./{}/status_file.ylk Case:{} \'*".format(name,n))
 
 def signal_handler(sig, frame):
     print("Cleaning up the mess...")
