@@ -7,7 +7,7 @@ in transmission/distribution due to lightning activity.
 ```
 sudo apt install \
 gcc g++ gfortran pkg-config make \
-libgl1 libxm4 libncurses5 dos2unix
+libgl1 libxm4 libncurses5 dos2unix git
 ```
 ### Build
 First let's build libyaluk.a
@@ -30,7 +30,7 @@ In the root directory of the repository
 ```
 sudo apt install python3
 export PWD=$(pwd)
-python yaluk_run.py -nLN450 -w$PWD/examples/LN450 -j4 -by -a$PWD/libatp -y$PWD/source
+python3 yaluk_run.py -nLN450 -w$PWD/examples/LN450 -j4 -by -a$PWD/libatp -y$PWD/source
 ```
 This is an example, do `python yaluk_run.py -h` for some hints. \
 Have a coffee :coffee:. In `$PWD/examples/LN450/results` you will find your results safe and sound.

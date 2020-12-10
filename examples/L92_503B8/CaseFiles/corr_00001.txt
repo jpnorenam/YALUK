@@ -1,10 +1,10 @@
-3.18E4   % Magnitud Corriente 1era funcion Heidler.....Ih1
+2.50E4   % Magnitud Corriente 1era funcion Heidler.....Ih1
 0.00E0   % Magnitud Corriente 2da funcion Heidler.....Ih2
-2.20E-6   % tiempo de Frente 1era Funcion Heidler.......tao11
+5.10E-7   % tiempo de Frente 1era Funcion Heidler.......tao11
 5.00E-5   % Tiempo de Cola 1era Funcion Heidler.........tao21
 0.00E0   % Tiempo de Frente 2da Funcion Heidler........tao12
 0.00E0   % Tiempo de Cola 2da Funcion Heidler..........tao22
 4.00E0   % Constante 1era funcion Heidler..............n1
 0   % Constante 2da funcion Heidler..............n2
--4199.44080711918   % Posición en X del Rayo..........X0
--8753.42698075336   % Posición en Y del Rayo..........Y0
+-4451.9500380237   % Posición en X del Rayo..........X0
+-7923.08808623092   % Posición en Y del Rayo..........Y0
