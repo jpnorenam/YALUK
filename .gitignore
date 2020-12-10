@@ -18,3 +18,5 @@ libubuntu64_old/
 *.lis
 *.dat
 results/
+*.bin
+*.tmp
