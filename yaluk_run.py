@@ -26,7 +26,7 @@ def parse_args():
                           dest="n_threads",
                           help="number of threads",
                           required=True, type=int,
-                          choices=range(1, multiprocessing.cpu_count()))
+                          choices=range(1, multiprocessing.cpu_count()+1))
     required.add_argument('-b',
                           dest="build",
                           help="build source before running the subprocess [y/n]",
@@ -107,8 +107,27 @@ def t_fun(pool, semaphore, curr_params, tpbig, case):
         
         # Extraer datos del .LIS
         try:
-            shutil.copyfile("./{}.{}.s{}.lis".format(case, n,curr_params[0]),
-                        "./results/stroke{}.{}.lis".format(curr_params[0], n))
+            #shutil.copyfile("./{}.{}.s{}.lis".format(case, n,curr_params[0]),
+            #            "./results/stroke{}.{}.lis".format(curr_params[0], n))
+            bash_cmd = "cat ./{​​}​​.{​​}​​.s{​​}​​.lis | sed -n -e '/Step/,/0       0.0/p' >> ./results/stroke{​​}​​.{​​}​​.lis".format(
+            case, n,curr_params[0], curr_params[0], n)
+            process = subprocess.Popen(bash_cmd, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+            
+            # Get variable maxima
+            bash_cmd = "cat ./{​​}​​.{​​}​​.s{​​}​​.lis | sed -n -e '/Variable maxima/,/Times of maxima/p' >> ./results/stroke{​​}​​.{​​}​​.lis".format(
+            case, n,curr_params[0], curr_params[0], n)
+            process = subprocess.Popen(bash_cmd, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+            
+
+
+            # Get variable minima
+            bash_cmd = "cat ./{​​}​​.{​​}​​.s{​​}​​.lis | sed -n -e '/Variable minima/,/Times of minima/p' >> ./results/stroke{​​}​​.{​​}​​.lis".format(
+            case, n,curr_params[0], curr_params[0], n)
+            process = subprocess.Popen(bash_cmd, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+            
             try:
                 
                 os.remove("./{}.{}.s{}.lis".format(case, n,curr_params[0]))

@@ -21,7 +21,7 @@ def parse_args():
 
 def read_lis(file, case_name):
     # Get nodes order
-    bash_cmd = """cat {} | sed -n -e '/Step/,/Variable maxima/p' | sed -e '$ d' | \
+    bash_cmd = """cat {} | sed -n -e '/Step/,/0       0.0/p' | sed -e '$ d' | \
                 perl -nE 'say /N.*/g' | tr -s '\n' | tr -s '\t' | tr -s ' ' | tr '\n' ' '""".format(file)
     process = subprocess.Popen(bash_cmd, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
