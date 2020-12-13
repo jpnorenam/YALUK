@@ -2,7 +2,7 @@
 sudo apt update
 sudo apt install \
 gcc g++ gfortran pkg-config make \
-libgl1 libxm4 libncurses5 dos2unix git python3-pip
+libgl1 libxm4 libncurses5 dos2unix git python3-pip /Q
 
 pip3 install pandas
 
